@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="640" viewBox="0 0 1200 640" role="img" aria-labelledby="title desc">
+  <title id="title">NotchDock interface design preview</title>
+  <desc id="desc">A desktop with an expanding black notch panel, music controls, and a sage green focus timer. This is an illustration, not an app screenshot.</desc>
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#172827"/><stop offset=".6" stop-color="#213331"/><stop offset="1" stop-color="#3f302d"/></linearGradient>
+    <radialGradient id="light"><stop stop-color="#88948a" stop-opacity=".28"/><stop offset="1" stop-color="#88948a" stop-opacity="0"/></radialGradient>
+    <linearGradient id="cover" x2="1" y2="1"><stop stop-color="#596b42"/><stop offset="1" stop-color="#243a31"/></linearGradient>
+  </defs>
+  <rect width="1200" height="640" rx="24" fill="url(#bg)"/>
+  <ellipse cx="310" cy="220" rx="650" ry="520" fill="url(#light)"/>
+  <path d="M0 500 Q260 280 570 460 T1200 395 V640 H0Z" fill="#172a25" opacity=".3"/>
+  <g font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif">
+    <text x="36" y="32" fill="#fff" opacity=".72" font-size="13" font-weight="600">NotchDock</text>
+    <text x="1078" y="32" fill="#fff" opacity=".65" font-size="12">9:41 AM</text>
+    <path d="M298 0 H902 Q892 0 892 12 V297 Q892 326 863 326 H337 Q308 326 308 297 V12 Q308 0 298 0Z" fill="#000"/>
+    <rect x="510" y="0" width="180" height="32" rx="12" fill="#020202"/>
+    <circle cx="345" cy="64" r="5" fill="#c7ed9e"/>
+    <text x="360" y="69" fill="white" font-size="14" font-weight="600">NotchDock</text>
+    <rect x="540" y="49" width="78" height="30" rx="15" fill="#202020"/>
+    <text x="556" y="68" fill="white" font-size="11">Overview</text>
+    <text x="633" y="68" fill="#797b7c" font-size="11">File shelf</text>
+    <text x="710" y="68" fill="#797b7c" font-size="11">Focus</text>
+    <rect x="788" y="50" width="28" height="28" rx="8" fill="#171b13"/>
+    <path d="M801 57V70M797 60H806M797 65H806" stroke="#c7ed9e" stroke-width="1.4"/>
+    <rect x="824" y="50" width="28" height="28" rx="8" fill="#111"/>
+    <circle cx="838" cy="64" r="5" stroke="#8b8b8b" fill="none" stroke-width="2"/>
+    <rect x="334" y="99" width="312" height="174" rx="18" fill="#131416" stroke="#252629"/>
+    <text x="353" y="123" fill="#c7ed9e" font-size="9" letter-spacing="2">NOW PLAYING</text>
+    <text x="565" y="123" fill="#77797a" font-size="9">Apple Music</text>
+    <rect x="353" y="138" width="48" height="48" rx="11" fill="url(#cover)"/>
+    <path d="M374 169V151L386 148V166M374 151L386 148" stroke="#c7ed9e" fill="none" stroke-width="2"/>
+    <ellipse cx="371" cy="170" rx="4" ry="3" fill="#c7ed9e"/><ellipse cx="383" cy="167" rx="4" ry="3" fill="#c7ed9e"/>
+    <text x="414" y="157" fill="#eeeeef" font-size="14" font-weight="600">Your favorite track</text>
+    <text x="414" y="177" fill="#7e8081" font-size="11">A soundtrack for your day</text>
+    <rect x="353" y="201" width="274" height="3" rx="1.5" fill="#303132"/><rect x="353" y="201" width="116" height="3" rx="1.5" fill="#c7ed9e"/>
+    <circle cx="490" cy="239" r="17" fill="#c7ed9e"/>
+    <path d="M485 233V245M495 233V245" stroke="#10130c" stroke-width="3"/>
+    <path d="M448 233L440 239L448 245Z M437 233V245 M533 233L541 239L533 245Z M544 233V245" fill="#ddd" stroke="#ddd" stroke-width="1.5"/>
+    <rect x="658" y="99" width="208" height="174" rx="18" fill="#131416" stroke="#252629"/>
+    <text x="677" y="123" fill="#c7ed9e" font-size="9" letter-spacing="2">FOCUS</text>
+    <text x="677" y="174" fill="#f5f6f5" font-size="38" font-weight="300">25:00</text>
+    <text x="679" y="196" fill="#7e8081" font-size="11">Less noise. More flow.</text>
+    <rect x="677" y="220" width="118" height="32" rx="16" fill="#c7ed9e"/>
+    <path d="M692 231L692 241L699 236Z" fill="#12170c"/>
+    <text x="708" y="240" fill="#12170c" font-size="11" font-weight="600">Start focus</text>
+    <circle cx="339" cy="297" r="2" fill="#c7ed9e"/>
+    <text x="348" y="301" fill="#727574" font-size="10">A little space. A clearer day.</text>
+    <text x="781" y="301" fill="#727574" font-size="10">82%   ·   Close</text>
+    <text x="600" y="446" text-anchor="middle" fill="#d9e4dc" font-size="12" letter-spacing="4">YOUR LITTLE SPACE, UP TOP.</text>
+    <text x="600" y="499" text-anchor="middle" fill="#f1f2ed" font-size="37" font-weight="300">Everything you need. Within reach.</text>
+    <text x="600" y="539" text-anchor="middle" fill="#9eaaa3" font-size="14">Music. Files. Focus. A native companion for your Mac.</text>
+    <text x="600" y="609" text-anchor="middle" fill="#768b80" font-size="10" letter-spacing="1">INTERFACE DESIGN PREVIEW · NOT AN APP SCREENSHOT</text>
+  </g>
+</svg>

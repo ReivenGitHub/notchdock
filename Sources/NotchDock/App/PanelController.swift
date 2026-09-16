@@ -1,0 +1,151 @@
+import AppKit
+import Combine
+import NotchDockCore
+import SwiftUI
+
+private final class NotchPanel: NSPanel {
+    var dismiss: () -> Void = {}
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { false }
+    override func cancelOperation(_ sender: Any?) { dismiss() }
+}
+
+@MainActor
+final class PanelController {
+    private let panel: NotchPanel
+    private let state: PanelState
+    private let preferences: Preferences
+    private let media: MediaService
+    private let shelf: ShelfStore
+    private var subscriptions = Set<AnyCancellable>()
+    private var openWork: DispatchWorkItem?
+    private var closeWork: DispatchWorkItem?
+    private var pointerInside = false
+    private var interactionCount = 0
+    private var screenObserver: NSObjectProtocol?
+    private var wakeObserver: NSObjectProtocol?
+
+    init(state: PanelState, preferences: Preferences, media: MediaService,
+         shelf: ShelfStore, focus: FocusStore, battery: BatteryService) {
+        self.state = state
+        self.preferences = preferences
+        self.media = media
+        self.shelf = shelf
+        panel = NotchPanel(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        panel.isFloatingPanel = true
+        panel.hidesOnDeactivate = false
+        panel.isReleasedWhenClosed = false
+        panel.backgroundColor = .clear
+        panel.isOpaque = false
+        panel.hasShadow = false
+        panel.level = .statusBar
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
+        panel.isMovable = false
+        panel.animationBehavior = .none
+        panel.title = "NotchDock"
+        let hostingView = NSHostingView(rootView: NotchView()
+            .environmentObject(state).environmentObject(preferences).environmentObject(media)
+            .environmentObject(shelf).environmentObject(focus).environmentObject(battery))
+        hostingView.sizingOptions = []
+        panel.contentView = hostingView
+        panel.dismiss = { [weak self] in self?.collapse() }
+        state.togglePanel = { [weak self] in self?.toggle() }
+        state.closePanel = { [weak self] in self?.collapse() }
+        state.pointerChanged = { [weak self] inside in self?.pointerChanged(inside) }
+        state.targetChanged = { [weak self] targeted in
+            guard let self else { return }
+            if targeted { self.cancelPending(); self.state.tab = .shelf; self.expand() }
+            else { self.scheduleClose() }
+        }
+        state.beginInteraction = { [weak self] in self?.interactionCount += 1; self?.cancelPending() }
+        state.endInteraction = { [weak self] in
+            guard let self else { return }
+            self.interactionCount = max(0, self.interactionCount - 1)
+            self.scheduleClose()
+        }
+        state.$expanded.removeDuplicates().sink { [weak self] expanded in
+            self?.layout(expanded: expanded, animated: true)
+            self?.media.setVisible(expanded)
+            if expanded { self?.shelf.refresh() }
+        }.store(in: &subscriptions)
+        state.$pinned.dropFirst().sink { [weak self] pinned in
+            if !pinned { DispatchQueue.main.async { self?.scheduleClose() } }
+        }.store(in: &subscriptions)
+        preferences.$preferBuiltInDisplay.dropFirst().sink { [weak self] _ in
+            DispatchQueue.main.async { guard let self else { return }; self.layout(expanded: self.state.expanded) }
+        }.store(in: &subscriptions)
+        screenObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in guard let self else { return }; self.layout(expanded: self.state.expanded) }
+        }
+        wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in guard let self else { return }; self.layout(expanded: self.state.expanded) }
+        }
+        layout(expanded: false)
+        panel.orderFrontRegardless()
+    }
+    func toggle() {
+        if state.expanded { collapse() }
+        else { expand(); panel.makeKey() }
+    }
+    func expand() { cancelPending(); state.expanded = true; panel.orderFrontRegardless() }
+    func collapse() { cancelPending(); state.pinned = false; state.expanded = false }
+    func focusFinished() {
+        state.tab = .focus
+        expand()
+        let work = DispatchWorkItem { [weak self] in self?.scheduleClose() }
+        closeWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 8, execute: work)
+    }
+    private func pointerChanged(_ inside: Bool) {
+        pointerInside = inside
+        cancelPending()
+        if inside, preferences.expandOnHover, !state.expanded {
+            let work = DispatchWorkItem { [weak self] in self?.expand() }
+            openWork = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.18, execute: work)
+        } else if !inside { scheduleClose() }
+    }
+    private func scheduleClose() {
+        closeWork?.cancel()
+        guard state.expanded, !state.pinned, !state.dropTargeted, !pointerInside, interactionCount == 0 else { return }
+        let work = DispatchWorkItem { [weak self] in
+            guard let self, !self.state.pinned, !self.state.dropTargeted,
+                  !self.pointerInside, self.interactionCount == 0 else { return }
+            self.state.expanded = false
+        }
+        closeWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6, execute: work)
+    }
+    private func cancelPending() { openWork?.cancel(); closeWork?.cancel() }
+    private func layout(expanded: Bool, animated: Bool = false) {
+        let screens = NSScreen.screens
+        let screen = preferences.preferBuiltInDisplay
+            ? (screens.first { $0.safeAreaInsets.top > 0 } ?? screens.first) : screens.first
+        guard let screen else { panel.orderOut(nil); return }
+        let notchWidth: CGFloat
+        if let left = screen.auxiliaryTopLeftArea, let right = screen.auxiliaryTopRightArea {
+            notchWidth = max(0, right.minX - left.maxX)
+        } else { notchWidth = 0 }
+        let geometry = OverlayGeometry(screen: screen.frame, safeTop: screen.safeAreaInsets.top, hardwareWidth: notchWidth)
+        state.topPadding = geometry.topPadding
+        let frame = geometry.frame(expanded: expanded)
+        if animated && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.24
+                panel.animator().setFrame(frame, display: true)
+            }
+        } else { panel.setFrame(frame, display: true) }
+        panel.orderFrontRegardless()
+    }
+    func stop() {
+        cancelPending()
+        if let screenObserver { NotificationCenter.default.removeObserver(screenObserver) }
+        if let wakeObserver { NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver) }
+        subscriptions.removeAll()
+        panel.orderOut(nil)
+    }
+}

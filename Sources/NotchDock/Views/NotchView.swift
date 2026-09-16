@@ -1,0 +1,83 @@
+import SwiftUI
+import UniformTypeIdentifiers
+
+struct NotchView: View {
+    @EnvironmentObject private var state: PanelState
+    @EnvironmentObject private var shelf: ShelfStore
+    @EnvironmentObject private var focus: FocusStore
+    @EnvironmentObject private var battery: BatteryService
+    var body: some View {
+        Group { if state.expanded { expanded } else { compact } }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .foregroundStyle(.white)
+            .background(DockShape().fill(Color.black))
+            .overlay(DockShape().stroke(DockTheme.border, lineWidth: 0.75))
+            .clipShape(DockShape()).contentShape(DockShape()).preferredColorScheme(.dark)
+            .onHover { state.pointerChanged($0) }
+            .onDrop(of: [UTType.fileURL], isTargeted: $state.dropTargeted) { providers in
+                state.tab = .shelf
+                return shelf.acceptDrop(providers)
+            }
+            .onChange(of: state.dropTargeted) { state.targetChanged($0) }
+    }
+    private var compact: some View {
+        Button(action: state.togglePanel) {
+            HStack {
+                Image(systemName: focus.isRunning ? "timer" : "sparkle")
+                    .font(.system(size: 12, weight: .semibold)).foregroundStyle(DockTheme.accent)
+                Spacer(minLength: 64)
+                if focus.isRunning || focus.session.phase == .paused {
+                    Text(focus.label).font(.system(size: 10, weight: .medium, design: .monospaced))
+                } else {
+                    Image(systemName: shelf.items.isEmpty ? "chevron.down" : "tray.fill").font(.system(size: 10, weight: .medium))
+                }
+            }.padding(.horizontal, 24).frame(maxWidth: .infinity, maxHeight: .infinity)
+        }.buttonStyle(.plain).accessibilityLabel("Open NotchDock").help("Open NotchDock · ⌥⌘Space")
+    }
+    private var expanded: some View {
+        VStack(spacing: 16) {
+            header.frame(height: 28)
+            Group {
+                switch state.tab {
+                case .overview: OverviewView()
+                case .shelf: ShelfView()
+                case .focus: FocusView()
+                }
+            }.frame(height: 174)
+            footer.frame(height: 20)
+        }.padding(.horizontal, 24).padding(.top, state.topPadding).padding(.bottom, 16)
+    }
+    private var header: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "sparkle").foregroundStyle(DockTheme.accent).font(.system(size: 15, weight: .medium))
+            Text("NotchDock").font(.system(size: 13, weight: .semibold))
+            Spacer(minLength: 6)
+            HStack(spacing: 2) {
+                ForEach(PanelTab.allCases) { tab in
+                    Button { state.tab = tab } label: {
+                        Text(tab.rawValue).font(.system(size: 10, weight: .medium))
+                            .padding(.horizontal, 10).padding(.vertical, 7)
+                            .foregroundStyle(state.tab == tab ? .white : DockTheme.muted)
+                            .background(state.tab == tab ? Color.white.opacity(0.1) : .clear, in: Capsule())
+                    }.buttonStyle(.plain).accessibilityAddTraits(state.tab == tab ? .isSelected : [])
+                }
+            }
+            IconButton(symbol: state.pinned ? "pin.fill" : "pin", label: state.pinned ? "Unpin panel" : "Keep panel open",
+                       active: state.pinned) { state.pinned.toggle() }
+            IconButton(symbol: "gearshape", label: "Open settings", action: state.showSettings)
+        }
+    }
+    private var footer: some View {
+        HStack(spacing: 7) {
+            Circle().fill(DockTheme.accent).frame(width: 4, height: 4)
+            Text(state.dropTargeted ? "Drop to keep it close" : "A little space. A clearer day.").font(.system(size: 10))
+            Spacer()
+            Image(systemName: battery.symbol)
+            Text(battery.label).monospacedDigit()
+            Divider().frame(height: 10).padding(.horizontal, 3)
+            Button(action: state.closePanel) {
+                HStack(spacing: 4) { Text("Close"); Image(systemName: "chevron.up") }
+            }.buttonStyle(.plain).help("Close panel (Escape)")
+        }.font(.system(size: 10)).foregroundStyle(DockTheme.muted)
+    }
+}

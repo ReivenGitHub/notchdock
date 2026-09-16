@@ -1,0 +1,42 @@
+name: Build NotchDock for macOS
+
+on:
+  push:
+    branches: [main, 'codex/**']
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-package:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Toolchain
+        run: swift --version
+      - name: Validate repository
+        run: python3 scripts/validate-project.py
+      - name: Compile app and run core tests
+        run: swift test --parallel
+      - name: Package Apple silicon and Intel app
+        run: bash scripts/package-app.sh universal
+      - name: Verify both architectures
+        run: lipo -verify_arch arm64 x86_64 build/NotchDock.app/Contents/MacOS/NotchDock
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NotchDock-macOS
+          path: |
+            dist/NotchDock-macOS.zip
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14

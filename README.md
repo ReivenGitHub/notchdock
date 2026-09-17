@@ -46,6 +46,21 @@ Open [Actions](https://github.com/ReivenGitHub/notchdock/actions/workflows/macos
 
 Local and CI builds are ad-hoc signed, not Apple notarized. A downloaded build may need explicit approval in **System Settings → Privacy & Security**. For broad distribution, use your Developer ID and the [signing instructions](docs/DISTRIBUTION.md).
 
+### If macOS says “NotchDock” Not Opened
+
+The GitHub build is ad-hoc signed and has not been notarized by Apple. macOS can therefore block its first launch with “Apple could not verify NotchDock is free of malware.”
+
+If this is the build you downloaded from this repository and you choose to trust it:
+
+1. Click **Done** in the warning.
+2. Open **System Settings → Privacy & Security**.
+3. Scroll to **Security**, find the entry for NotchDock, and click **Open Anyway**.
+4. Confirm with **Open** and authenticate if macOS asks.
+
+If the entry is missing, try opening the app once, then return to Privacy & Security. On a managed Mac, these controls may be restricted by the administrator.
+
+This creates an exception for the app. It is not Apple notarization or a malware scan. See [Apple’s instructions](https://support.apple.com/en-us/102445). For a release that meets the normal Developer ID and notarization checks, follow the [distribution guide](docs/DISTRIBUTION.md).
+
 ## Use it
 
 - **Open:** hover at the top center, click the compact panel, use the menu bar, or press **⌥⌘Space**.

@@ -96,24 +96,9 @@ final class ShelfStore: ObservableObject {
         if picker.runModal() == .OK { add(picker.urls) }
     }
     func acceptDrop(_ providers: [NSItemProvider]) -> Bool {
-        let files = providers.filter { $0.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) }
-        guard !files.isEmpty else { return false }
+        guard FileDropLoader.supports(providers) else { return false }
         Task {
-            var urls: [URL] = []
-            for provider in files {
-                let url: URL? = await withCheckedContinuation { continuation in
-                    provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { value, _ in
-                        if let data = value as? Data {
-                            continuation.resume(returning: URL(dataRepresentation: data, relativeTo: nil))
-                        } else if let url = value as? URL {
-                            continuation.resume(returning: url)
-                        } else if let string = value as? String {
-                            continuation.resume(returning: URL(string: string))
-                        } else { continuation.resume(returning: nil) }
-                    }
-                }
-                if let url { urls.append(url) }
-            }
+            let urls = await FileDropLoader.load(providers)
             if urls.isEmpty { message = "No local files were found in that drop." }
             else { add(urls) }
         }

@@ -31,9 +31,11 @@ try:
     check(info.get("LSMinimumSystemVersion") == "13.0", "Deployment target does not match Package.swift")
     check(info.get("LSUIElement") is True, "Menu bar app must use LSUIElement")
     check(bool(info.get("NSAppleEventsUsageDescription")), "Missing Automation purpose string")
+    check(bool(info.get("NSCameraUsageDescription")), "Missing Mirror camera purpose string")
     with (ROOT / "Resources/NotchDock.entitlements").open("rb") as file:
         entitlements = plistlib.load(file)
     check(entitlements.get("com.apple.security.automation.apple-events") is True, "Missing Apple Events entitlement")
+    check(entitlements.get("com.apple.security.device.camera") is True, "Missing camera entitlement for hardened-runtime signing")
 except (OSError, plistlib.InvalidFileException) as error:
     errors.append(f"Invalid property list: {error}")
 for script in [*ROOT.glob("scripts/*.sh"), *ROOT.glob("*.command")]:

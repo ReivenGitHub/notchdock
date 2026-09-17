@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0 — Files Tray, AirDrop, Mirror, and album covers
+
+- Added separate Files Tray and AirDrop drop targets, with a single drop router to avoid duplicate actions.
+- Added native AirDrop recipient selection from drops, file context menus, a picker, and the menu bar.
+- Added a live camera mirror with horizontal flip, explicit camera permission, off/retry controls, and shutdown when hidden, sleeping, or quitting. No microphone or recording.
+- Added album artwork to the compact notch while music plays, including alongside an active timer, and artwork plus album name in Overview.
+- Added local Music artwork extraction and bounded Spotify image downloads, in-memory caching, stale-result rejection, cancellation, and retry.
+- Enlarged the expanded content area to accommodate the new tools while preserving the quiet idle notch.
+- Added 14 portable regression cases and a macOS Music-script compilation check (49 XCTest cases total).
+
 ## 0.2.0 — Quiet notch and everyday tools
 
 - Idle on a notched display now draws no extra bar, icons, or border outside the physical camera housing. A transparent hover/drop strip keeps it reachable.

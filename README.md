@@ -6,7 +6,7 @@ A native macOS notch companion with music controls, a file shelf, and a focus ti
 
 ![NotchDock interface design preview](docs/preview.svg)
 
-> **Early version · 0.2.0.** See [recorded validation results](docs/VALIDATION.md) and the [macOS build workflow](https://github.com/ReivenGitHub/notchdock/actions/workflows/macos.yml) for actual build status. Native interaction and hardware testing remain separate from compilation. The image above illustrates the original design, not a current app screenshot.
+> **Early version · 0.3.0.** See [recorded validation results](docs/VALIDATION.md) and the [macOS build workflow](https://github.com/ReivenGitHub/notchdock/actions/workflows/macos.yml) for actual build status. Native interaction and hardware testing remain separate from compilation. The image above illustrates the original design, not a current app screenshot.
 
 ## What it does
 
@@ -14,8 +14,10 @@ A native macOS notch companion with music controls, a file shelf, and a focus ti
 | --- | --- |
 | Quiet idle notch | Blends into the real camera notch when idle, with no extra visible bar or icons. Hover or click to open; pin to keep open. |
 | Activity indicators | A running or paused timer, or playing music, adds small indicators beside the camera. Stored files do not keep it expanded. |
-| Music | Optional Apple Music or Spotify desktop controls, track details, progress, and compact activity status. |
-| File shelf | Up to 24 files/folders, drag in/out, search, newest/name sorting, Quick Look, copy file/path, and Finder actions. |
+| Music & album covers | Apple Music or Spotify controls, track/artist/album details, progress, and real cover art in Overview and beside the notch while playing. |
+| Files Tray | Up to 24 files/folders, a dedicated drop target, drag in/out, search, sorting, Quick Look, copy file/path, and Finder actions. |
+| AirDrop | A separate drop target opens Apple's recipient picker. Also available from each file's menu or the menu bar. |
+| Mirror | A live camera preview with horizontal flip and an off button. Camera stops when you leave Mirror or close the panel. |
 | Focus & breaks | Custom focus, short-break, and long-break durations; pause/resume/reset; sound; saved state; today's completed focus totals. |
 | Battery | Battery percentage and charging state; a desktop indicator on Macs without a battery. |
 | Display support | Choose any connected display. Remembers the choice across reconnections; non-notched displays keep a small handle. |
@@ -45,7 +47,7 @@ Drag `build/NotchDock.app` into **Applications** to keep it. Enable launch at lo
 
 ### Download a GitHub build
 
-**[Download the verified version 0.2 Mac build](https://github.com/ReivenGitHub/notchdock/actions/runs/35181914960/artifacts/10480902953)** (Apple silicon + Intel; artifact expires October 1, 2026). Unzip the download and its included app ZIP. Quit the old app before replacing it in Applications. Existing files and timer state are preserved.
+Version 0.3 adds AirDrop, Mirror, and album artwork. Its native build results and download are recorded in [VALIDATION.md](docs/VALIDATION.md) when available. Quit the old app before replacing it in Applications; existing shelf references and timer state are preserved.
 
 Open [Actions](https://github.com/ReivenGitHub/notchdock/actions/workflows/macos.yml), choose a successful **Build NotchDock for macOS** run, and download its **NotchDock-macOS** artifact. Unzip the download and the included `NotchDock-macOS.zip` to get the `.app`. The workflow builds both architectures and includes a SHA-256 checksum. It does not automatically publish a Release.
 
@@ -70,8 +72,10 @@ This creates an exception for the app. It is not Apple notarization or a malware
 
 - **Open:** hover at the top center, click the compact panel, use the menu bar, or press **⌥⌘Space**.
 - **Keep open:** click the pin. Click Close, press Escape while the panel has keyboard focus, or use the toggle shortcut to close it.
-- **Music:** select a player in Settings, open it, then click Connect music and approve macOS Automation access. Disable the integration in Settings at any time.
-- **Files:** drop files at the notch or on the expanded panel. Search by name; use the options menu to sort or remove unavailable references. The eye button opens Quick Look. Right-click to copy the file or path, open, reveal, or remove it. Originals stay in place.
+- **Music:** select a player in Settings, open it, then click Connect music and approve macOS Automation access. Playing music shows its cover beside the physical notch, including while a timer occupies the other side. Overview shows the larger cover and album name. If the player supplies no cover, a music placeholder and retry action appear; there is no guessed album search. Disable the integration in Settings at any time.
+- **Files:** drag toward the notch to open Files. Drop on **Files Tray** to keep references or on **AirDrop** to choose a recipient. Search by name, sort, preview with the eye button, and drag cards out. Right-click a card to AirDrop, copy, open, reveal, or remove it. Originals stay in place.
+- **AirDrop:** dropping files opens Apple's sharing window; you choose the recipient there. Click the target or use the menu bar to choose files instead. Wi-Fi, Bluetooth, receiver discoverability, and supported files are handled by macOS. AirDropped files are not also added to the tray.
+- **Mirror:** click the Mirror tab or choose Open Mirror from the menu bar. Approve camera access if asked. Mirror stays open until you change tabs or close it, and can be flipped horizontally. The camera stops on exit, sleep, or session deactivation; after sleep, click Start mirror to resume.
 - **Focus:** choose Focus, Short break, or Long break before starting. Set custom durations in Settings. Pause preserves remaining time; Reset cancels the session. Expired deadlines finish after wake or relaunch. Only completed focus sessions count toward today's totals.
 - **Display & keyboard:** open Settings → Notch. Record a shortcut with Command, Option, or Control; Escape cancels recording. The menu bar works even when a shortcut is unavailable or disabled.
 - **Quit:** choose Quit NotchDock from the menu bar menu.
@@ -99,7 +103,9 @@ Test Automation and login items from the packaged `.app`. A raw `swift run` exec
 
 ## Privacy
 
-NotchDock has no accounts, analytics, tracking, or network code. It reads local battery status and, only when enabled, the selected player's metadata through Apple Events. It does not read clipboard history, capture the screen, or use private MediaRemote APIs.
+NotchDock has no accounts, analytics, or tracking. It reads battery status and, only when music is enabled, the selected player's metadata through Apple Events. Spotify album artwork is fetched over HTTPS from the image URL supplied by Spotify, restricted to Spotify image CDN domains. These requests have no cookies, stored credentials, or persistent network cache. Titles and artists are not sent to an album-search service. Music artwork is read locally through a temporary file that is deleted after loading. The small decoded-cover cache is in memory only.
+
+Mirror uses video input only while requested and visible. It does not save photos or recordings, access the microphone, or transmit camera frames. AirDrop hands selected file references to Apple's sharing service, and you select the recipient in macOS. The app does not read clipboard history, capture the screen, or use private MediaRemote APIs.
 
 Shelf references, the current timer, and up to 200 completed sessions are stored under `~/Library/Application Support/NotchDock/`; settings use the `app.notchdock.desktop` user defaults domain. Version 0.2 restores the older timer file on first upgrade. Copy actions write to the clipboard only when requested. The app is not App Sandbox enabled. See the [architecture notes](docs/ARCHITECTURE.md) for file access details.
 

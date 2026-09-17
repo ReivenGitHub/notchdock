@@ -18,6 +18,8 @@ The initial source archive was prepared while repository creation was pending. O
 
 ## Next steps
 
+Version 0.3 adds the requested Files Tray/AirDrop destinations, a live camera mirror, and album art in compact/expanded music views. Native sharing and capture frameworks handle the new integrations; artwork uses local Music data or Spotify's supplied image URL. Regression coverage rises to 49 cases, including compilation of the actual Music scripts on macOS.
+
 Version 0.2 adds a quiet physical-notch idle state, activity wings, custom shortcuts, persistent display choices, file search/Quick Look/copy actions, focus/break modes, daily totals, and 16 new regression cases. Existing timer and display preferences migrate automatically. See [CHANGELOG.md](../CHANGELOG.md).
 
 Complete the manual Mac checklist after a successful build. Useful follow-ups include UI integration tests, accessibility testing, and notarized releases. Private media APIs and proprietary copied code are not part of this implementation.

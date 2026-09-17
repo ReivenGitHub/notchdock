@@ -19,6 +19,7 @@ final class PanelController {
     private let shelf: ShelfStore
     private let focus: FocusStore
     private let displays: DisplayService
+    private let mirror: MirrorService
     private var subscriptions = Set<AnyCancellable>()
     private var openWork: DispatchWorkItem?
     private var closeWork: DispatchWorkItem?
@@ -31,13 +32,15 @@ final class PanelController {
     private var localPointerMonitor: Any?
 
     init(state: PanelState, preferences: Preferences, media: MediaService,
-         shelf: ShelfStore, focus: FocusStore, battery: BatteryService, displays: DisplayService) {
+         shelf: ShelfStore, focus: FocusStore, battery: BatteryService, displays: DisplayService,
+         airDrop: AirDropService, mirror: MirrorService) {
         self.state = state
         self.preferences = preferences
         self.media = media
         self.shelf = shelf
         self.focus = focus
         self.displays = displays
+        self.mirror = mirror
         panel = NotchPanel(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         panel.isFloatingPanel = true
         panel.hidesOnDeactivate = false
@@ -53,7 +56,8 @@ final class PanelController {
         panel.title = "NotchDock"
         let hostingView = NSHostingView(rootView: NotchView()
             .environmentObject(state).environmentObject(preferences).environmentObject(media)
-            .environmentObject(shelf).environmentObject(focus).environmentObject(battery))
+            .environmentObject(shelf).environmentObject(focus).environmentObject(battery)
+            .environmentObject(airDrop).environmentObject(mirror))
         hostingView.sizingOptions = []
         panel.contentView = hostingView
         panel.dismiss = { [weak self] in self?.collapse() }
@@ -78,6 +82,11 @@ final class PanelController {
         }.store(in: &subscriptions)
         state.$pinned.dropFirst().sink { [weak self] pinned in
             if !pinned { DispatchQueue.main.async { self?.scheduleClose() } }
+        }.store(in: &subscriptions)
+        state.$expanded.combineLatest(state.$tab).map { $0 && $1 == .mirror }.removeDuplicates()
+            .sink { [weak self] visible in self?.mirror.setVisible(visible) }.store(in: &subscriptions)
+        state.$tab.dropFirst().sink { [weak self] tab in
+            if tab != .mirror { DispatchQueue.main.async { self?.scheduleClose() } }
         }.store(in: &subscriptions)
         preferences.$displayTarget.combineLatest(preferences.$hideWhenIdle).dropFirst().sink { [weak self] _ in
             DispatchQueue.main.async { guard let self else { return }; self.layout(expanded: self.state.expanded) }
@@ -150,10 +159,10 @@ final class PanelController {
     }
     private func scheduleClose() {
         closeWork?.cancel()
-        guard state.expanded, !state.pinned, !state.dropTargeted, !pointerInside,
+        guard state.expanded, state.tab != .mirror, !state.pinned, !state.dropTargeted, !pointerInside,
               interactionCount == 0, !isEditingText else { return }
         let work = DispatchWorkItem { [weak self] in
-            guard let self, !self.state.pinned, !self.state.dropTargeted,
+            guard let self, self.state.tab != .mirror, !self.state.pinned, !self.state.dropTargeted,
                   !self.pointerInside, self.interactionCount == 0, !self.isEditingText else { return }
             self.state.expanded = false
         }

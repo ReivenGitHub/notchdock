@@ -40,4 +40,4 @@ shasum -a 256 dist/NotchDock-macOS.zip > dist/SHA256SUMS.txt
 spctl --assess --type execute --verbose build/NotchDock.app
 ```
 
-The default workflow does not notarize, require signing secrets, or publish a GitHub Release. When changing the bundle ID, update the property list, validator, and privacy documentation together. Test Automation and login items from the final signed bundle. Different signing identities can require renewed macOS consent.
+The default workflow does not notarize, require signing secrets, or publish a GitHub Release. When changing the bundle ID, update the property list, validator, and privacy documentation together. Test Automation, camera access, and login items from the final signed bundle. The camera entitlement and usage description are included for Mirror; no microphone entitlement or purpose string is requested. Different signing identities can require renewed macOS consent.

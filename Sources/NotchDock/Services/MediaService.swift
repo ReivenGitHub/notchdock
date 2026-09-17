@@ -1,6 +1,7 @@
 import AppKit
 import Combine
 import Foundation
+import NotchDockCore
 
 struct NowPlaying {
     var title = "Nothing playing"
@@ -12,18 +13,18 @@ struct NowPlaying {
     var hasTrack = false
     var progress: Double { duration > 0 ? min(1, max(0, position / duration)) : 0 }
 }
-private enum ScriptResult { case success(String), failure(String) }
+enum ScriptResult { case success(String), failure(String) }
 
 /// Runs only application-owned scripts, without a shell, off the UI thread.
-private final class AppleScriptBridge {
+final class AppleScriptBridge {
     private let queue = DispatchQueue(label: "app.notchdock.music", qos: .utility)
-    func run(_ source: String) async -> ScriptResult {
+    func run(_ source: String, arguments: [String] = []) async -> ScriptResult {
         await withCheckedContinuation { continuation in
             queue.async {
                 let task = Process()
                 let pipe = Pipe()
                 task.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-                task.arguments = ["-e", source]
+                task.arguments = ["-e", source] + arguments
                 task.standardOutput = pipe
                 task.standardError = pipe
                 do { try task.run() }
@@ -51,8 +52,14 @@ final class MediaService: ObservableObject {
     @Published private(set) var track = NowPlaying()
     @Published private(set) var error: String?
     @Published private(set) var busy = false
+    @Published private(set) var artwork: NSImage?
+    @Published private(set) var artworkLoading = false
     private let preferences: Preferences
     private let bridge = AppleScriptBridge()
+    private lazy var artworkLoader = ArtworkLoader(bridge: bridge)
+    private var artworkRequest = ArtworkRequest()
+    private var artworkTask: Task<Void, Never>?
+    private var nextArtworkAttempt = Date.distantPast
     private var poller: AnyCancellable?
     private var selectionObserver: AnyCancellable?
     private var panelVisible = false
@@ -69,6 +76,8 @@ final class MediaService: ObservableObject {
                     guard let self else { return }
                     self.connectionVersion += 1
                     self.track = NowPlaying()
+                    self.clearArtwork()
+                    self.artworkLoader.clearCache()
                     self.error = nil
                     self.refresh()
                 }
@@ -84,7 +93,12 @@ final class MediaService: ObservableObject {
     }
     func setVisible(_ visible: Bool) { panelVisible = visible; if visible { refresh() } }
     func enable() { preferences.mediaEnabled = true; error = nil; refresh() }
-    func retry() { error = nil; refresh() }
+    func retry() { error = nil; reloadArtwork(); refresh() }
+    func reloadArtwork() {
+        clearArtwork()
+        artworkLoader.clearCache()
+        refresh()
+    }
     func openPlayer() {
         guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: preferences.player.bundleID) else {
             error = "\(preferences.player.title) is not installed. Select another player in Settings."
@@ -102,43 +116,74 @@ final class MediaService: ObservableObject {
             let result = await bridge.run(Self.script(player: player, body: command.rawValue))
             busy = false
             guard version == connectionVersion else { return }
-            if case .failure(let message) = result { error = message; track = NowPlaying() }
+            if case .failure(let message) = result { error = message; track = NowPlaying(); clearArtwork() }
             else { error = nil; refresh() }
         }
     }
     func refresh() {
         guard preferences.mediaEnabled, !runningRequest, !busy else { return }
         let player = preferences.player
-        guard isRunning(player) else { track = NowPlaying(artist: "Open \(player.title) to begin."); return }
+        guard isRunning(player) else {
+            track = NowPlaying(artist: "Open \(player.title) to begin.")
+            clearArtwork()
+            return
+        }
         runningRequest = true
         let version = connectionVersion
-        let duration = player == .spotify ? "((duration of current track) / 1000)" : "(duration of current track)"
-        let body = """
-        if player state is stopped then return "stopped"
-        set separator to ASCII character 31
-        return (player state as string) & separator & (name of current track as string) & separator & (artist of current track as string) & separator & (album of current track as string) & separator & (player position as string) & separator & (\(duration) as string)
-        """
+        let source = MediaScripts.metadata(spotify: player == .spotify)
         Task {
-            let result = await bridge.run(Self.script(player: player, body: body))
+            let result = await bridge.run(source)
             runningRequest = false
             guard version == connectionVersion, preferences.mediaEnabled else { return }
             switch result {
-            case .failure(let message): error = message; track = NowPlaying()
+            case .failure(let message): error = message; track = NowPlaying(); clearArtwork()
             case .success(let output):
                 error = nil
-                let fields = output.components(separatedBy: "\u{1F}")
-                guard fields.count == 6 else { track = NowPlaying(); return }
-                track = NowPlaying(title: fields[1], artist: fields[2], album: fields[3], playing: fields[0] == "playing",
-                                   position: Self.number(fields[4]), duration: Self.number(fields[5]), hasTrack: true)
+                guard let metadata = PlaybackMetadata(scriptOutput: output) else {
+                    track = NowPlaying(); clearArtwork(); return
+                }
+                track = NowPlaying(title: metadata.title, artist: metadata.artist, album: metadata.album, playing: metadata.playing,
+                                   position: metadata.position, duration: metadata.duration, hasTrack: true)
+                updateArtwork(metadata, player: player)
             }
         }
     }
     private func isRunning(_ player: PlayerApp) -> Bool {
         !NSRunningApplication.runningApplications(withBundleIdentifier: player.bundleID).isEmpty
     }
-    private static func number(_ string: String) -> Double {
-        let value = Double(string.replacingOccurrences(of: ",", with: ".")) ?? 0
-        return value.isFinite ? max(0, value) : 0
+    private func updateArtwork(_ metadata: PlaybackMetadata, player: PlayerApp) {
+        let key = metadata.artworkKey(player: player.rawValue)
+        if artworkRequest.key != key {
+            clearArtwork()
+            artworkRequest.begin(key: key)
+        }
+        guard artwork == nil, !artworkLoading, Date() >= nextArtworkAttempt else { return }
+        artworkLoading = true
+        let generation = artworkRequest.generation
+        artworkTask = Task { [weak self] in
+            guard let self else { return }
+            let image = await self.artworkLoader.image(for: metadata, player: player)
+            guard !Task.isCancelled, self.preferences.mediaEnabled,
+                  self.artworkRequest.accepts(generation: generation, key: key) else { return }
+            self.artwork = image
+            self.artworkLoading = false
+            self.artworkTask = nil
+            self.nextArtworkAttempt = Date().addingTimeInterval(30)
+        }
+    }
+    private func clearArtwork() {
+        artworkTask?.cancel()
+        artworkTask = nil
+        artworkRequest.begin(key: nil)
+        artwork = nil
+        artworkLoading = false
+        nextArtworkAttempt = .distantPast
+    }
+    func stop() {
+        poller?.cancel()
+        selectionObserver?.cancel()
+        clearArtwork()
+        artworkLoader.clearCache()
     }
     private static func script(player: PlayerApp, body: String) -> String {
         """

@@ -1,5 +1,9 @@
 # Validation record
 
+## Version 0.3 verification
+
+Local packaging, permission metadata, shell syntax, documentation links, and diff checks passed. Native compilation, the 49 tests, and universal packaging are pending the macOS workflow. Live Music/Spotify artwork, AirDrop transfer, and camera/notch interaction require a Mac and remain on the [manual checklist](TESTING.md).
+
 ## Version 0.2 — verified macOS build, 2026-09-17
 
 [Build run #5](https://github.com/ReivenGitHub/notchdock/actions/runs/35181914960) completed successfully for source commit `759edcf0a6a4e24052d8bbc26a6f35c22b4ca300`, including the transparent-notch pointer handling. The runner used macOS 15 and Apple Swift 6.1.2. These results were read from the completed job and its logs.

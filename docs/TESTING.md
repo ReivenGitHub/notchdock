@@ -6,13 +6,16 @@ See [VALIDATION.md](VALIDATION.md) for results actually observed. A checked-in t
 
 `python3 scripts/validate-project.py` checks packaging inputs, shell syntax, property lists, links, and SVG syntax. It does not type-check Swift or run the app.
 
-`swift test --parallel` runs 34 XCTest cases:
+`swift test --parallel` runs 49 XCTest cases on macOS (48 portable cases and one macOS-only script compilation case):
 
 - Nine timer cases cover pause/resume, sleep deadlines, one-shot completion, restart, repeated start, reset, JSON restoration, formatting, invalid durations, and backward clock movement.
 - Five shelf cases cover duplicates, existing items, URL rejection, capacity, and normalized paths.
 - Eight geometry cases cover notch clearance, quiet idle width, missing-hardware fallback, anchoring, negative display coordinates, and narrow-screen containment.
 - Eight archive cases cover one-shot completion across relaunch, pause identity, cancellation, excluding breaks, midnight boundaries, late clicks, legacy restoration, and bounded history.
 - Four shortcut cases cover the default binding, modifier requirements, invalid keycodes/flags, and persistence of custom and disabled shortcuts.
+- Ten media/artwork cases cover metadata and album fields, paused tracks, identity changes, malformed results, numeric handling, allowed/blocked artwork URLs, and stale or canceled image results.
+- Four drop-routing cases cover the AirDrop target, tray/gap/header/card areas, compact/other-tab fallback, and changing notch geometry.
+- One macOS case compiles the actual Music metadata and artwork scripts against the installed dictionary without executing them or requesting Automation permission. Spotify requires separate live-app verification.
 
 The macOS workflow compiles the executable, runs the tests, builds arm64 and x86_64 binaries, combines them, verifies signature structure, and packages an artifact. A successful build does not confirm interactive integration behavior.
 
@@ -34,7 +37,15 @@ Use the bundled `.app`, not a bare command-line executable.
 - [ ] VoiceOver identifies tabs, playback, timer, files, and settings controls.
 - [ ] Apple Music: consent, denied consent, retry, playback controls, no track, and player quit.
 - [ ] Spotify: repeat the music checks; switch players during a pending poll.
+- [ ] Music and Spotify: real cover and album name appear in Overview; cover appears beside the camera while playing, even with a focus timer on the other side.
+- [ ] Rapidly skip tracks and change players; old artwork never replaces the current cover. Pause/resume preserves the cover in Overview, stopped playback clears it, and disabled music clears all cover state.
+- [ ] Test missing Music artwork, Spotify local files, offline artwork downloads, and Reload album artwork. A placeholder must not block playback controls or timer display.
 - [ ] Drop files onto both panel states; drag files out into Finder and another app.
+- [ ] Files Tray target adds references once. AirDrop target opens only the native recipient picker and does not add references; test multiple files, folders, cancellation, unavailable receiver, and successful transfer to a second device.
+- [ ] AirDrop from a card context menu and the menu bar; cancel a file picker, complete/cancel sharing, then share again.
+- [ ] Mirror: allow/deny camera access, no camera, camera in use, horizontal flip, off/retry, and opening from the menu bar.
+- [ ] Leave Mirror, close the panel, sleep/wake, switch sessions, and quit: camera turns off. Grant permission after closing the tab: camera must remain off. Reopen rapidly and verify only the visible mirror captures.
+- [ ] VoiceOver identifies Files Tray, AirDrop, album artwork, and Mirror controls. Check layouts on notched and non-notched screens.
 - [ ] Add duplicates, 25 files, cloud-only files, and externally removed files.
 - [ ] Removing one item or clearing the shelf leaves all original files untouched.
 - [ ] Relaunch restores the shelf; rename a file and check bookmark recovery.
@@ -51,9 +62,11 @@ Use the bundled `.app`, not a bare command-line executable.
 ## Limits
 
 - First implementation, not complete NotchNook feature parity.
-- No browser audio, private system-wide Now Playing, album-art downloads, AirDrop target, clipboard history, weather, camera, or widget plugins.
+- No browser audio, private system-wide Now Playing, clipboard history, weather, camera recording, or widget plugins.
 - One display hosts the panel; it does not follow the pointer across monitors.
-- Compact activity prioritizes an active timer over music; it does not show track text or album art. Paused timers remain visible; paused music does not.
+- Compact activity shows the playing album cover on the left and a timer or music indicator on the right. It does not show track text. Paused timers remain visible; paused music alone does not keep the notch active.
+- Artwork depends on what the selected desktop player exposes. Unavailable covers get a placeholder and retry; there is no title-based album search or unsupported-player fallback.
+- AirDrop needs compatible nearby devices and macOS sharing support. Compilation cannot verify actual discovery or transfer. Camera permission and physical hardware likewise require interactive testing.
 - The camera cutout has no display pixels; idle behavior is a transparent activation region, with content beside or below the camera when needed.
 - Focus history retains the latest 200 completions. Completion feedback requires the app to be running; no scheduled system notifications are implemented.
 - The panel may cover menu-bar space and does not reserve system layout space.

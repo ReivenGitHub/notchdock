@@ -23,7 +23,7 @@ public struct OverlayGeometry: Equatable {
     public var compactSize: CGSize {
         CGSize(width: min(screen.width - 24, max(204, hardwareWidth + 124)), height: max(34, safeTop + 7))
     }
-    public var expandedSize: CGSize { CGSize(width: min(580, screen.width - 24), height: topPadding + 272) }
+    public var expandedSize: CGSize { CGSize(width: min(580, screen.width - 24), height: topPadding + 312) }
     public func frame(expanded: Bool) -> CGRect {
         frame(mode: expanded ? .expanded : .activity)
     }

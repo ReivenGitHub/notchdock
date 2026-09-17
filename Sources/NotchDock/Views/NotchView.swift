@@ -1,5 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import NotchDockCore
 
 struct NotchView: View {
     @EnvironmentObject private var state: PanelState
@@ -8,7 +9,27 @@ struct NotchView: View {
     @EnvironmentObject private var battery: BatteryService
     @EnvironmentObject private var media: MediaService
     @EnvironmentObject private var preferences: Preferences
+    @EnvironmentObject private var airDrop: AirDropService
     var body: some View {
+        GeometryReader { geometry in
+            content
+                .onDrop(of: [UTType.fileURL], delegate: NotchFileDrop(
+                    update: { location in
+                        if !state.dropTargeted { state.dropTargeted = true; state.targetChanged(true) }
+                        let target = destination(at: location, width: geometry.size.width)
+                        if state.dropDestination != target { state.dropDestination = target }
+                    },
+                    exit: finishDrop,
+                    perform: { info in
+                        let target = destination(at: info.location, width: geometry.size.width)
+                        let providers = info.itemProviders(for: [UTType.fileURL])
+                        let accepted = target == .airDrop ? airDrop.acceptDrop(providers) : shelf.acceptDrop(providers)
+                        finishDrop()
+                        return accepted
+                    }))
+        }
+    }
+    private var content: some View {
         Group {
             if state.blendsIntoNotch {
                 // The physical camera housing is already black. Do not draw an extra bar.
@@ -27,23 +48,32 @@ struct NotchView: View {
             .foregroundStyle(.white)
             .preferredColorScheme(.dark)
             .onHover { state.pointerChanged($0) }
-            .onDrop(of: [UTType.fileURL], isTargeted: $state.dropTargeted) { providers in
-                state.tab = .shelf
-                return shelf.acceptDrop(providers)
-            }
-            .onChange(of: state.dropTargeted) { state.targetChanged($0) }
+    }
+    private func destination(at point: CGPoint, width: CGFloat) -> FileDropDestination {
+        FileDropLayout.destination(at: point, panelWidth: width, topPadding: state.topPadding,
+                                   shelfVisible: state.expanded && state.tab == .shelf)
+    }
+    private func finishDrop() {
+        state.dropTargeted = false
+        state.dropDestination = nil
+        state.targetChanged(false)
     }
     private var compact: some View {
         Button {
-            if !focus.hasActiveSession && media.track.playing { state.tab = .overview }
+            if media.track.playing { state.tab = .overview }
             state.togglePanel()
         } label: {
             GeometryReader { geometry in
                 let wing = max(0, (geometry.size.width - state.hardwareNotchWidth) / 2)
                 HStack(spacing: 0) {
-                    Image(systemName: focus.hasActiveSession ? focus.mode.symbol : (media.track.playing ? "music.note" : "sparkle"))
-                        .font(.system(size: 12, weight: .semibold)).foregroundStyle(DockTheme.accent)
-                        .frame(width: wing, height: geometry.size.height)
+                    Group {
+                        if media.track.playing {
+                            AlbumArtwork(size: min(26, geometry.size.height - 8))
+                        } else {
+                            Image(systemName: focus.hasActiveSession ? focus.mode.symbol : "sparkle")
+                                .font(.system(size: 12, weight: .semibold)).foregroundStyle(DockTheme.accent)
+                        }
+                    }.frame(width: wing, height: geometry.size.height)
                     Color.clear.frame(width: state.hardwareNotchWidth)
                     Group {
                         if focus.hasActiveSession {
@@ -67,10 +97,11 @@ struct NotchView: View {
                 case .overview: OverviewView()
                 case .shelf: ShelfView()
                 case .focus: FocusView()
+                case .mirror: MirrorView()
                 }
-            }.frame(height: 174)
+            }.frame(height: 214)
             footer.frame(height: 20)
-        }.padding(.horizontal, 24).padding(.top, state.topPadding).padding(.bottom, 16)
+        }.padding(.horizontal, FileDropLayout.sideInset).padding(.top, state.topPadding).padding(.bottom, 16)
     }
     private var header: some View {
         HStack(spacing: 8) {
@@ -95,7 +126,7 @@ struct NotchView: View {
     private var footer: some View {
         HStack(spacing: 7) {
             Circle().fill(DockTheme.accent).frame(width: 4, height: 4)
-            Text(state.dropTargeted ? "Drop to keep it close" : "A little space. A clearer day.").font(.system(size: 10))
+            Text(state.dropTargeted ? (state.dropDestination == .airDrop ? "Drop to choose an AirDrop recipient" : "Drop to add to Files Tray") : "A little space. A clearer day.").font(.system(size: 10))
             Spacer()
             Image(systemName: battery.symbol)
             Text(battery.label).monospacedDigit()
@@ -105,4 +136,15 @@ struct NotchView: View {
             }.buttonStyle(.plain).help("Close panel (Escape)")
         }.font(.system(size: 10)).foregroundStyle(DockTheme.muted)
     }
+}
+
+private struct NotchFileDrop: DropDelegate {
+    let update: (CGPoint) -> Void
+    let exit: () -> Void
+    let perform: (DropInfo) -> Bool
+    func validateDrop(info: DropInfo) -> Bool { info.hasItemsConforming(to: [UTType.fileURL]) }
+    func dropEntered(info: DropInfo) { update(info.location) }
+    func dropUpdated(info: DropInfo) -> DropProposal? { update(info.location); return DropProposal(operation: .copy) }
+    func dropExited(info: DropInfo) { exit() }
+    func performDrop(info: DropInfo) -> Bool { perform(info) }
 }

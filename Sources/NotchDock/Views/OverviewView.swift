@@ -4,7 +4,7 @@ struct OverviewView: View {
     var body: some View {
         HStack(spacing: 12) {
             MusicCard().frame(maxWidth: .infinity, maxHeight: .infinity)
-            FocusMiniCard().frame(width: 190, height: 174)
+            FocusMiniCard().frame(width: 190, height: 214)
         }
     }
 }
@@ -31,17 +31,20 @@ private struct MusicCard: View {
                     .foregroundStyle(DockTheme.accent).buttonStyle(.plain)
             } else {
                 HStack(spacing: 11) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 11)
-                            .fill(LinearGradient(colors: [DockTheme.accent.opacity(0.28), Color(red: 0.12, green: 0.22, blue: 0.19)],
-                                                 startPoint: .topLeading, endPoint: .bottomTrailing))
-                        Image(systemName: "music.note").font(.system(size: 21)).foregroundStyle(DockTheme.accent)
-                    }.frame(width: 46, height: 46)
+                    AlbumArtwork(size: 60)
                     VStack(alignment: .leading, spacing: 5) {
                         Text(media.track.title).font(.system(size: 13, weight: .semibold)).lineLimit(1)
                         Text(media.track.artist).font(.system(size: 10)).foregroundStyle(DockTheme.muted).lineLimit(1)
+                        if media.track.hasTrack {
+                            Text(media.track.album.isEmpty ? "Album not provided" : media.track.album)
+                                .font(.system(size: 9)).foregroundStyle(DockTheme.accent.opacity(0.85)).lineLimit(1)
+                        }
                     }
                     Spacer(minLength: 0)
+                }
+                if media.track.hasTrack && media.artwork == nil && !media.artworkLoading {
+                    Button("Cover unavailable · Retry", action: media.reloadArtwork)
+                        .font(.system(size: 9)).buttonStyle(.plain).foregroundStyle(DockTheme.muted)
                 }
                 GeometryReader { geometry in
                     Capsule().fill(Color.white.opacity(0.08))

@@ -10,6 +10,9 @@ NotchDock is a macOS accessory application. Swift Package Manager builds the exe
 | HotKeyController / ShortcutRecorder | Validated Carbon hotkeys, temporary unregistering during recording, and conflict feedback. |
 | PanelState / Preferences | Observable presentation state and saved preferences. |
 | MediaService | Selected-player polling and controls via a serialized osascript worker. |
+| ArtworkLoader / AlbumArtwork | Local Music cover extraction, bounded Spotify image fetches, thumbnail decoding, in-memory caching, and shared cover UI. |
+| AirDropService | Native NSSharingService recipient picker, chosen-file validation, and sharing completion/cancellation. |
+| MirrorService / MirrorView | Camera permission, serialized video capture, mirrored preview, and visible-only lifetime. |
 | ShelfStore / QuickLookController | References, bookmarks, file picker, drag handling, explicit copy actions, native previews, and persistence. |
 | FocusStore | UI clock, migration, persistence, and completion around FocusArchive. |
 | BatteryService | IOKit power source snapshot every 30 seconds. |
@@ -33,11 +36,27 @@ The scripts contain fixed commands and a two-value player enum. No filename, tra
 
 macOS owns consent. The bundle declares an Automation purpose string and an Apple Events entitlement for Developer ID signing. No Accessibility or Screen Recording permission is requested.
 
+### Album artwork
+
+Metadata includes a track identifier and Spotify's artwork URL. Artwork keys include the player, track, title, artist, album, and cover URL, but exclude progress and playing/paused state. A generation ticket prevents canceled or stale asynchronous loads from replacing the current cover. Changing players, disabling music, or losing the track clears the cover. Failed covers are retried after 30 seconds, with an explicit reload action.
+
+Music supplies `raw data of artwork 1`; the script checks the track identifier and metadata, receives values as process arguments, and writes to a private temporary directory. The file is removed after loading. No untrusted string is interpolated into script code. Spotify supplies its artwork URL: only HTTPS on `scdn.co`, `spotifycdn.com`, and `spotifycdn.net` (including subdomains) is allowed, including on redirects. The ephemeral URL session has no cookie store, credentials, or disk cache, caps downloads at 8 MiB, and uses timeouts. Images are decoded as thumbnails up to 512 pixels and cached in memory (16 covers).
+
+The compact left wing shows album art whenever music is playing; an active timer can remain in the right wing. Expanded Overview also shows the album name. Missing artwork uses a labeled placeholder rather than another album's cover. Some streaming tracks/local Spotify files may not expose artwork.
+
 ## File references
 
 Removing a shelf item never deletes its source file. The shelf accepts existing local file URLs and folders, deduplicates normalized paths, and holds at most 24. Bookmarks help locate moved files between launches; unavailable items stay visible and removable. Bookmark recovery is not guaranteed after deletion or remote-volume changes. Symlink aliases with different paths are not deduplicated by inode.
 
 State is JSON written atomically under Application Support. The app stores paths and bookmarks, not file contents. It is not sandboxed. A Mac App Store port needs a separate sandbox and security-scoped bookmark lifecycle, plus a media integration review.
+
+Files Tray and AirDrop share one root `DropDelegate`. `FileDropLayout` maps the AirDrop target using the same dimensions as the view, so a single drop cannot both share and add a reference. All other file drops route to the tray, including at the compact notch. Provider loading is shared by both services. AirDrop receives only existing local file URLs, and uses `NSSharingService(named: .sendViaAirDrop)`; macOS owns discovery and recipient selection. The service remains retained while sharing, and an interaction hold prevents the panel closing during the picker. Original files are never moved or deleted.
+
+## Mirror
+
+Opening the Mirror tab requests camera authorization if needed, then starts a video-only AVCaptureSession on a private serial queue. AVCaptureVideoPreviewLayer renders directly; there is no file output, audio input, screenshot, or frame-upload path. Horizontal mirroring uses the preview connection's mirroring support. Denied access, unavailable cameras, and interrupted sessions have visible recovery controls.
+
+Expanded state and the selected tab control the capture lifetime. Generation checks discard permission/start callbacks after a tab change or close, while queued stop operations release inputs. The Mirror tab suppresses hover auto-close until the user changes tabs or explicitly closes. Sleep, display sleep, and session deactivation stop capture and require an explicit restart if Mirror remains open. App termination also stops the session. The bundle includes NSCameraUsageDescription and the camera entitlement for hardened-runtime signing.
 
 ## Timer
 
@@ -53,5 +72,8 @@ The new `focus-state.json` restores a valid legacy `focus.json` when no new arch
 - [Apple: NSPanel](https://developer.apple.com/documentation/appkit/nspanel)
 - [Apple: Automation purpose string](https://developer.apple.com/documentation/bundleresources/information-property-list/nsappleeventsusagedescription)
 - [Apple: SMAppService](https://developer.apple.com/documentation/servicemanagement/smappservice/mainapp)
+- [Apple: NSSharingService](https://developer.apple.com/documentation/appkit/nssharingservice)
+- [Apple: Camera authorization](https://developer.apple.com/documentation/avfoundation/requesting-authorization-to-capture-and-save-media)
+- [Apple: AVCaptureVideoPreviewLayer](https://developer.apple.com/documentation/avfoundation/avcapturevideopreviewlayer)
 - [GitHub: checkout](https://github.com/actions/checkout)
 - [GitHub: upload-artifact](https://github.com/actions/upload-artifact)

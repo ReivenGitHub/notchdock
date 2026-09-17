@@ -3,13 +3,14 @@ import Foundation
 import NotchDockCore
 
 enum PanelTab: String, CaseIterable, Identifiable, Hashable {
-    case overview = "Overview", shelf = "File shelf", focus = "Focus"
+    case overview = "Overview", shelf = "Files", focus = "Focus", mirror = "Mirror"
     var id: String { rawValue }
     var symbol: String {
         switch self {
         case .overview: return "square.grid.2x2"
         case .shelf: return "tray"
         case .focus: return "timer"
+        case .mirror: return "web.camera"
         }
     }
 }
@@ -21,6 +22,7 @@ final class PanelState: ObservableObject {
     @Published var tab: PanelTab = .overview
     @Published var topPadding: CGFloat = 16
     @Published var dropTargeted = false
+    @Published var dropDestination: FileDropDestination?
     @Published var shortcutAvailable = true
     @Published var recordingShortcut = false
     @Published var layoutMode: OverlayGeometry.Mode = .idle

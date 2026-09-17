@@ -73,6 +73,12 @@ struct SettingsView: View {
                         }
                         Text("macOS asks for Automation permission for the player you choose. The selected app is checked every 6 seconds while collapsed, and every 2 seconds when expanded. Browser audio is not supported.")
                             .font(.caption).foregroundStyle(.secondary)
+                        Text("Album covers appear beside the notch and in Overview. Music supplies local artwork; Spotify covers download from its image servers and are cached in memory only.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Section("Mirror") {
+                        Text("Camera access is requested when you open Mirror. Leaving its tab, closing the panel, or putting the Mac to sleep stops the camera. No photos, recordings, or microphone access.")
+                            .font(.caption).foregroundStyle(.secondary)
                     }
                     Section("On this Mac") {
                         Text("Files, settings, and focus history stay on this Mac. No accounts, analytics, or clipboard monitoring.")

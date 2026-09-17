@@ -7,6 +7,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private let preferences = Preferences()
     private let state = PanelState()
     private let shelf = ShelfStore()
+    private let airDrop = AirDropService()
+    private let mirror = MirrorService()
     private lazy var focus = FocusStore(preferences: preferences)
     private let displays = DisplayService()
     private let battery = BatteryService()
@@ -20,7 +22,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         state.showSettings = { [weak self] in self?.openSettings() }
         panelController = PanelController(state: state, preferences: preferences, media: media,
-                                          shelf: shelf, focus: focus, battery: battery, displays: displays)
+                                          shelf: shelf, focus: focus, battery: battery, displays: displays,
+                                          airDrop: airDrop, mirror: mirror)
+        airDrop.beginInteraction = { [weak self] in self?.state.beginInteraction() }
+        airDrop.endInteraction = { [weak self] in self?.state.endInteraction() }
         hotKey = HotKeyController { [weak self] in self?.panelController?.toggle() }
         preferences.$shortcut.combineLatest(state.$recordingShortcut).sink { [weak self] binding, recording in
             guard let self else { return }
@@ -55,6 +60,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         menu.addItem(.separator())
         addItem("Show / Hide NotchDock", action: #selector(togglePanel), to: menu)
         addItem("Add Files…", action: #selector(addFiles), to: menu)
+        addItem("AirDrop Files…", action: #selector(airDropFiles), to: menu)
+        addItem("Open Mirror", action: #selector(openMirror), to: menu)
         addItem("Settings…", action: #selector(openSettings), to: menu, key: ",")
         menu.addItem(.separator())
         addItem("Quit NotchDock", action: #selector(quit), to: menu, key: "q")
@@ -89,12 +96,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSApp.activate(ignoringOtherApps: true)
         settingsWindow?.makeKeyAndOrderFront(nil)
     }
+    @objc private func airDropFiles() {
+        state.tab = .shelf
+        panelController?.expand()
+        airDrop.chooseFiles()
+    }
+    @objc private func openMirror() { state.tab = .mirror; panelController?.expand() }
     @objc private func quit() { NSApp.terminate(nil) }
     func windowWillClose(_ notification: Notification) {
         if (notification.object as? NSWindow) === settingsWindow { state.recordingShortcut = false }
     }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
     func applicationWillTerminate(_ notification: Notification) {
+        mirror.shutdown(); media.stop()
         hotKey?.stop(); panelController?.stop(); displays.stop(); subscriptions.removeAll()
     }
 }

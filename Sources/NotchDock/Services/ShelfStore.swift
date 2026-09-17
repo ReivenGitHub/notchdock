@@ -21,6 +21,7 @@ final class ShelfStore: ObservableObject {
     static let capacity = 24
     @Published private(set) var items: [ShelfItem] = []
     @Published var message: String?
+    private let quickLook = QuickLookController()
 
     init() {
         do {
@@ -53,6 +54,28 @@ final class ShelfStore: ObservableObject {
     }
     func remove(_ id: UUID) { items.removeAll { $0.id == id }; message = nil; persist() }
     func clear() { items.removeAll(); message = nil; persist() }
+    func removeUnavailable() {
+        refresh()
+        let count = items.count
+        items.removeAll { !$0.available }
+        message = "Removed \(count - items.count) unavailable references."
+        persist()
+    }
+    func preview(_ item: ShelfItem) {
+        guard FileManager.default.fileExists(atPath: item.url.path) else {
+            message = "This file is unavailable. It may have moved or be offline."
+            refresh()
+            return
+        }
+        quickLook.show(item.url)
+    }
+    func copy(_ item: ShelfItem, pathOnly: Bool = false) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        if pathOnly { pasteboard.setString(item.url.path, forType: .string) }
+        else { pasteboard.writeObjects([item.url as NSURL]) }
+        message = pathOnly ? "Path copied." : "File reference copied. Paste it into another app."
+    }
     func refresh() {
         for index in items.indices { items[index].available = FileManager.default.fileExists(atPath: items[index].url.path) }
     }

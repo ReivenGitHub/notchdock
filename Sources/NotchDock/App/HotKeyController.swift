@@ -1,5 +1,6 @@
 import Carbon
 import Foundation
+import NotchDockCore
 
 @MainActor
 final class HotKeyController {
@@ -16,9 +17,19 @@ final class HotKeyController {
             DispatchQueue.main.async { controller.action() }
             return noErr
         }, 1, &type, Unmanaged.passUnretained(self).toOpaque(), &handler)
-        guard result == noErr else { return }
+        if result != noErr { handler = nil }
+    }
+    func configure(_ binding: ShortcutBinding?) {
+        if let hotKey { UnregisterEventHotKey(hotKey); self.hotKey = nil }
+        registered = false
+        guard handler != nil, let binding, binding.isValid else { return }
+        var modifiers: UInt32 = 0
+        if binding.modifiers.contains(.command) { modifiers |= UInt32(cmdKey) }
+        if binding.modifiers.contains(.option) { modifiers |= UInt32(optionKey) }
+        if binding.modifiers.contains(.control) { modifiers |= UInt32(controlKey) }
+        if binding.modifiers.contains(.shift) { modifiers |= UInt32(shiftKey) }
         let identifier = EventHotKeyID(signature: OSType(0x4E44434B), id: 1)
-        registered = RegisterEventHotKey(UInt32(kVK_Space), UInt32(cmdKey | optionKey), identifier,
+        registered = RegisterEventHotKey(binding.keyCode, modifiers, identifier,
                                         GetApplicationEventTarget(), 0, &hotKey) == noErr
     }
     func stop() {

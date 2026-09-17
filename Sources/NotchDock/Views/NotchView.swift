@@ -6,13 +6,26 @@ struct NotchView: View {
     @EnvironmentObject private var shelf: ShelfStore
     @EnvironmentObject private var focus: FocusStore
     @EnvironmentObject private var battery: BatteryService
+    @EnvironmentObject private var media: MediaService
+    @EnvironmentObject private var preferences: Preferences
     var body: some View {
-        Group { if state.expanded { expanded } else { compact } }
+        Group {
+            if state.blendsIntoNotch {
+                // The physical camera housing is already black. Do not draw an extra bar.
+                Color.clear.contentShape(Rectangle()).onTapGesture(perform: state.togglePanel)
+                    .accessibilityLabel("Open NotchDock").accessibilityAddTraits(.isButton)
+                    .accessibilityAction { state.togglePanel() }
+            } else {
+                Group { if state.expanded { expanded } else { compact } }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .background(DockShape().fill(Color.black))
+                    .overlay(DockShape().stroke(DockTheme.border, lineWidth: 0.75))
+                    .clipShape(DockShape()).contentShape(DockShape())
+            }
+        }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .foregroundStyle(.white)
-            .background(DockShape().fill(Color.black))
-            .overlay(DockShape().stroke(DockTheme.border, lineWidth: 0.75))
-            .clipShape(DockShape()).contentShape(DockShape()).preferredColorScheme(.dark)
+            .preferredColorScheme(.dark)
             .onHover { state.pointerChanged($0) }
             .onDrop(of: [UTType.fileURL], isTargeted: $state.dropTargeted) { providers in
                 state.tab = .shelf
@@ -21,18 +34,30 @@ struct NotchView: View {
             .onChange(of: state.dropTargeted) { state.targetChanged($0) }
     }
     private var compact: some View {
-        Button(action: state.togglePanel) {
-            HStack {
-                Image(systemName: focus.isRunning ? "timer" : "sparkle")
-                    .font(.system(size: 12, weight: .semibold)).foregroundStyle(DockTheme.accent)
-                Spacer(minLength: 64)
-                if focus.isRunning || focus.session.phase == .paused {
-                    Text(focus.label).font(.system(size: 10, weight: .medium, design: .monospaced))
-                } else {
-                    Image(systemName: shelf.items.isEmpty ? "chevron.down" : "tray.fill").font(.system(size: 10, weight: .medium))
+        Button {
+            if !focus.hasActiveSession && media.track.playing { state.tab = .overview }
+            state.togglePanel()
+        } label: {
+            GeometryReader { geometry in
+                let wing = max(0, (geometry.size.width - state.hardwareNotchWidth) / 2)
+                HStack(spacing: 0) {
+                    Image(systemName: focus.hasActiveSession ? focus.mode.symbol : (media.track.playing ? "music.note" : "sparkle"))
+                        .font(.system(size: 12, weight: .semibold)).foregroundStyle(DockTheme.accent)
+                        .frame(width: wing, height: geometry.size.height)
+                    Color.clear.frame(width: state.hardwareNotchWidth)
+                    Group {
+                        if focus.hasActiveSession {
+                            Text(focus.label).font(.system(size: 10, weight: .medium, design: .monospaced))
+                                .foregroundStyle(focus.isRunning ? .white : DockTheme.muted)
+                        } else {
+                            Image(systemName: media.track.playing ? "waveform" : "chevron.down")
+                                .font(.system(size: 11, weight: .medium))
+                        }
+                    }.frame(width: wing, height: geometry.size.height)
                 }
-            }.padding(.horizontal, 24).frame(maxWidth: .infinity, maxHeight: .infinity)
-        }.buttonStyle(.plain).accessibilityLabel("Open NotchDock").help("Open NotchDock · ⌥⌘Space")
+            }
+        }.buttonStyle(.plain).accessibilityLabel("Open NotchDock")
+            .help("Open NotchDock" + (preferences.shortcut.map { " · " + $0.label } ?? ""))
     }
     private var expanded: some View {
         VStack(spacing: 16) {

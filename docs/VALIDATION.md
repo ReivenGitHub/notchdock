@@ -1,5 +1,9 @@
 # Validation record
 
+## Version 0.2 verification
+
+Local static packaging, shell syntax, metadata, and documentation-link validation passed. The 34 XCTest cases and the native app changes require the macOS workflow; results will be recorded after that run completes. Physical-notch interaction and notarization remain separate manual/distribution steps.
+
 ## Verified macOS build — 2026-09-17
 
 [Build run #3](https://github.com/ReivenGitHub/notchdock/actions/runs/35178759069) completed successfully for source commit `d7162f6b45204e71e8d1607eb4b71802ed7230ec`.

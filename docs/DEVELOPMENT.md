@@ -18,4 +18,6 @@ The initial source archive was prepared while repository creation was pending. O
 
 ## Next steps
 
-Complete the manual Mac checklist after a successful build. Useful follow-ups include configurable shortcuts, UI integration tests, more display placement choices, accessibility testing, and notarized releases. Private media APIs and proprietary copied code are not part of this implementation.
+Version 0.2 adds a quiet physical-notch idle state, activity wings, custom shortcuts, persistent display choices, file search/Quick Look/copy actions, focus/break modes, daily totals, and 16 new regression cases. Existing timer and display preferences migrate automatically. See [CHANGELOG.md](../CHANGELOG.md).
+
+Complete the manual Mac checklist after a successful build. Useful follow-ups include UI integration tests, accessibility testing, and notarized releases. Private media APIs and proprietary copied code are not part of this implementation.

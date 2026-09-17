@@ -6,22 +6,25 @@ A native macOS notch companion with music controls, a file shelf, and a focus ti
 
 ![NotchDock interface design preview](docs/preview.svg)
 
-> **Early version · 0.1.0.** See [recorded validation results](docs/VALIDATION.md) and the [macOS build workflow](https://github.com/ReivenGitHub/notchdock/actions/workflows/macos.yml) for actual build status. Native interaction and hardware testing remain separate from compilation. The image above is a design illustration, not an app screenshot.
+> **Early version · 0.2.0.** See [recorded validation results](docs/VALIDATION.md) and the [macOS build workflow](https://github.com/ReivenGitHub/notchdock/actions/workflows/macos.yml) for actual build status. Native interaction and hardware testing remain separate from compilation. The image above illustrates the original design, not a current app screenshot.
 
 ## What it does
 
 | Feature | Behavior |
 | --- | --- |
-| Expanding notch | Hover or click to open. Pin it to keep it open, or press Escape to close. |
-| Music | Optional Apple Music or Spotify desktop controls, track details, and progress. |
-| File shelf | Drop up to 24 local files or folders, drag them into other apps, open them, or reveal them in Finder. |
-| Focus | 15, 25, and 50 minute sessions with pause, resume, reset, completion sound, and saved state. |
+| Quiet idle notch | Blends into the real camera notch when idle, with no extra visible bar or icons. Hover or click to open; pin to keep open. |
+| Activity indicators | A running or paused timer, or playing music, adds small indicators beside the camera. Stored files do not keep it expanded. |
+| Music | Optional Apple Music or Spotify desktop controls, track details, progress, and compact activity status. |
+| File shelf | Up to 24 files/folders, drag in/out, search, newest/name sorting, Quick Look, copy file/path, and Finder actions. |
+| Focus & breaks | Custom focus, short-break, and long-break durations; pause/resume/reset; sound; saved state; today's completed focus totals. |
 | Battery | Battery percentage and charging state; a desktop indicator on Macs without a battery. |
-| Display support | Adapts to a hardware notch, with a compact top-center panel on other displays. |
-| Keyboard | Option–Command–Space toggles the panel without Accessibility permission. |
-| Settings | Hover behavior, preferred display, music app, completion sound, and launch at login. |
+| Display support | Choose any connected display. Remembers the choice across reconnections; non-notched displays keep a small handle. |
+| Keyboard | Record a custom global shortcut, reset to Option–Command–Space, or disable it. No Accessibility permission. |
+| Settings | Idle and hover behavior, display, shortcut, session durations, completion behavior, music app, and launch at login. |
 
 Files remain at their original locations. Removing a shelf item removes only its reference. The shelf restores after relaunch using local bookmarks. Music support is for the Apple Music and Spotify **desktop apps**; browser tabs and other players are not supported.
+
+The physical camera cutout cannot display pixels. When idle on a notched Mac, NotchDock draws nothing outside it; a transparent two-point strip below it accepts hover and file drops. Controls appear beside or below the camera when active or expanded. Turn off **Settings → Notch → Blend into the hardware notch when idle** to keep a visible compact handle. Unpin and close the panel to return to idle.
 
 ## Get it running on your Mac
 
@@ -66,8 +69,9 @@ This creates an exception for the app. It is not Apple notarization or a malware
 - **Open:** hover at the top center, click the compact panel, use the menu bar, or press **⌥⌘Space**.
 - **Keep open:** click the pin. Click Close, press Escape while the panel has keyboard focus, or use the toggle shortcut to close it.
 - **Music:** select a player in Settings, open it, then click Connect music and approve macOS Automation access. Disable the integration in Settings at any time.
-- **Files:** drop files on the compact or expanded panel. Drag a card out to another app. Right-click to open, reveal, or remove it. Add also opens a file picker.
-- **Focus:** choose a duration before starting. Pause preserves remaining time; Reset stops the session. Expired deadlines finish after wake or relaunch.
+- **Files:** drop files at the notch or on the expanded panel. Search by name; use the options menu to sort or remove unavailable references. The eye button opens Quick Look. Right-click to copy the file or path, open, reveal, or remove it. Originals stay in place.
+- **Focus:** choose Focus, Short break, or Long break before starting. Set custom durations in Settings. Pause preserves remaining time; Reset cancels the session. Expired deadlines finish after wake or relaunch. Only completed focus sessions count toward today's totals.
+- **Display & keyboard:** open Settings → Notch. Record a shortcut with Command, Option, or Control; Escape cancels recording. The menu bar works even when a shortcut is unavailable or disabled.
 - **Quit:** choose Quit NotchDock from the menu bar menu.
 
 If another app has registered the global shortcut, Settings reports it as unavailable; the menu bar remains usable.
@@ -95,7 +99,7 @@ Test Automation and login items from the packaged `.app`. A raw `swift run` exec
 
 NotchDock has no accounts, analytics, tracking, or network code. It reads local battery status and, only when enabled, the selected player's metadata through Apple Events. It does not read clipboard history, capture the screen, or use private MediaRemote APIs.
 
-Shelf references and the focus session are stored under `~/Library/Application Support/NotchDock/`; settings use the `app.notchdock.desktop` user defaults domain. The app is not App Sandbox enabled. See the [architecture notes](docs/ARCHITECTURE.md) for file access details.
+Shelf references, the current timer, and up to 200 completed sessions are stored under `~/Library/Application Support/NotchDock/`; settings use the `app.notchdock.desktop` user defaults domain. Version 0.2 restores the older timer file on first upgrade. Copy actions write to the clipboard only when requested. The app is not App Sandbox enabled. See the [architecture notes](docs/ARCHITECTURE.md) for file access details.
 
 ## License
 

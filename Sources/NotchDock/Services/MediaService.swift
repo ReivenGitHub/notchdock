@@ -58,6 +58,7 @@ final class MediaService: ObservableObject {
     private var panelVisible = false
     private var runningRequest = false
     private var connectionVersion = 0
+    private var backgroundTicks = 0
 
     init(preferences: Preferences) {
         self.preferences = preferences
@@ -69,11 +70,15 @@ final class MediaService: ObservableObject {
                     self.connectionVersion += 1
                     self.track = NowPlaying()
                     self.error = nil
-                    if self.panelVisible { self.refresh() }
+                    self.refresh()
                 }
             }
         poller = Timer.publish(every: 2, on: .main, in: .common).autoconnect().sink { [weak self] _ in
-            guard let self, self.panelVisible, self.error == nil else { return }
+            guard let self, self.preferences.mediaEnabled, self.error == nil else { return }
+            // Lightweight background checks keep compact activity in sync without opening the player.
+            self.backgroundTicks += 1
+            guard self.panelVisible || self.backgroundTicks >= 3 else { return }
+            self.backgroundTicks = 0
             self.refresh()
         }
     }
@@ -97,7 +102,7 @@ final class MediaService: ObservableObject {
             let result = await bridge.run(Self.script(player: player, body: command.rawValue))
             busy = false
             guard version == connectionVersion else { return }
-            if case .failure(let message) = result { error = message }
+            if case .failure(let message) = result { error = message; track = NowPlaying() }
             else { error = nil; refresh() }
         }
     }
@@ -118,7 +123,7 @@ final class MediaService: ObservableObject {
             runningRequest = false
             guard version == connectionVersion, preferences.mediaEnabled else { return }
             switch result {
-            case .failure(let message): error = message
+            case .failure(let message): error = message; track = NowPlaying()
             case .success(let output):
                 error = nil
                 let fields = output.components(separatedBy: "\u{1F}")

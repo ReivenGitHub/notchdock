@@ -17,6 +17,8 @@ final class PanelController {
     private let preferences: Preferences
     private let media: MediaService
     private let shelf: ShelfStore
+    private let focus: FocusStore
+    private let displays: DisplayService
     private var subscriptions = Set<AnyCancellable>()
     private var openWork: DispatchWorkItem?
     private var closeWork: DispatchWorkItem?
@@ -24,13 +26,16 @@ final class PanelController {
     private var interactionCount = 0
     private var screenObserver: NSObjectProtocol?
     private var wakeObserver: NSObjectProtocol?
+    private var keyObserver: NSObjectProtocol?
 
     init(state: PanelState, preferences: Preferences, media: MediaService,
-         shelf: ShelfStore, focus: FocusStore, battery: BatteryService) {
+         shelf: ShelfStore, focus: FocusStore, battery: BatteryService, displays: DisplayService) {
         self.state = state
         self.preferences = preferences
         self.media = media
         self.shelf = shelf
+        self.focus = focus
+        self.displays = displays
         panel = NotchPanel(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         panel.isFloatingPanel = true
         panel.hidesOnDeactivate = false
@@ -41,6 +46,7 @@ final class PanelController {
         panel.level = .statusBar
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
         panel.isMovable = false
+        panel.acceptsMouseMovedEvents = true
         panel.animationBehavior = .none
         panel.title = "NotchDock"
         let hostingView = NSHostingView(rootView: NotchView()
@@ -71,9 +77,18 @@ final class PanelController {
         state.$pinned.dropFirst().sink { [weak self] pinned in
             if !pinned { DispatchQueue.main.async { self?.scheduleClose() } }
         }.store(in: &subscriptions)
-        preferences.$preferBuiltInDisplay.dropFirst().sink { [weak self] _ in
+        preferences.$displayTarget.combineLatest(preferences.$hideWhenIdle).dropFirst().sink { [weak self] _ in
             DispatchQueue.main.async { guard let self else { return }; self.layout(expanded: self.state.expanded) }
         }.store(in: &subscriptions)
+        focus.$archive.map { $0.session.phase }.removeDuplicates().dropFirst().sink { [weak self] _ in
+            self?.scheduleActivityLayout()
+        }.store(in: &subscriptions)
+        media.$track.map(\.playing).removeDuplicates().dropFirst().sink { [weak self] _ in
+            self?.scheduleActivityLayout()
+        }.store(in: &subscriptions)
+        keyObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didResignKeyNotification, object: panel, queue: .main
+        ) { [weak self] _ in Task { @MainActor in self?.scheduleClose() } }
         screenObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main
         ) { [weak self] _ in
@@ -111,28 +126,38 @@ final class PanelController {
     }
     private func scheduleClose() {
         closeWork?.cancel()
-        guard state.expanded, !state.pinned, !state.dropTargeted, !pointerInside, interactionCount == 0 else { return }
+        guard state.expanded, !state.pinned, !state.dropTargeted, !pointerInside,
+              interactionCount == 0, !isEditingText else { return }
         let work = DispatchWorkItem { [weak self] in
             guard let self, !self.state.pinned, !self.state.dropTargeted,
-                  !self.pointerInside, self.interactionCount == 0 else { return }
+                  !self.pointerInside, self.interactionCount == 0, !self.isEditingText else { return }
             self.state.expanded = false
         }
         closeWork = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6, execute: work)
     }
     private func cancelPending() { openWork?.cancel(); closeWork?.cancel() }
+    private var isEditingText: Bool { panel.isKeyWindow && panel.firstResponder is NSTextView }
+    private func scheduleActivityLayout() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self, !self.state.expanded else { return }
+            self.layout(expanded: false, animated: true)
+        }
+    }
     private func layout(expanded: Bool, animated: Bool = false) {
-        let screens = NSScreen.screens
-        let screen = preferences.preferBuiltInDisplay
-            ? (screens.first { $0.safeAreaInsets.top > 0 } ?? screens.first) : screens.first
-        guard let screen else { panel.orderOut(nil); return }
+        guard let screen = displays.screen(for: preferences.displayTarget) else { panel.orderOut(nil); return }
         let notchWidth: CGFloat
         if let left = screen.auxiliaryTopLeftArea, let right = screen.auxiliaryTopRightArea {
             notchWidth = max(0, right.minX - left.maxX)
         } else { notchWidth = 0 }
         let geometry = OverlayGeometry(screen: screen.frame, safeTop: screen.safeAreaInsets.top, hardwareWidth: notchWidth)
         state.topPadding = geometry.topPadding
-        let frame = geometry.frame(expanded: expanded)
+        let active = focus.hasActiveSession || (preferences.mediaEnabled && media.track.playing)
+        let mode: OverlayGeometry.Mode = expanded ? .expanded : (active || !preferences.hideWhenIdle ? .activity : .idle)
+        state.layoutMode = mode
+        state.hardwareNotchWidth = geometry.hasHardwareNotch ? notchWidth : 0
+        state.blendsIntoNotch = geometry.hasHardwareNotch && mode == .idle
+        let frame = geometry.frame(mode: mode)
         if animated && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
             NSAnimationContext.runAnimationGroup { context in
                 context.duration = 0.24
@@ -145,6 +170,7 @@ final class PanelController {
         cancelPending()
         if let screenObserver { NotificationCenter.default.removeObserver(screenObserver) }
         if let wakeObserver { NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver) }
+        if let keyObserver { NotificationCenter.default.removeObserver(keyObserver) }
         subscriptions.removeAll()
         panel.orderOut(nil)
     }

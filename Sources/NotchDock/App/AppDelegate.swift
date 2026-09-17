@@ -1,28 +1,40 @@
 import AppKit
+import Combine
 import SwiftUI
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private let preferences = Preferences()
     private let state = PanelState()
     private let shelf = ShelfStore()
-    private let focus = FocusStore()
+    private lazy var focus = FocusStore(preferences: preferences)
+    private let displays = DisplayService()
     private let battery = BatteryService()
     private lazy var media = MediaService(preferences: preferences)
     private var panelController: PanelController?
     private var hotKey: HotKeyController?
     private var statusItem: NSStatusItem?
     private var settingsWindow: NSWindow?
+    private var subscriptions = Set<AnyCancellable>()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         state.showSettings = { [weak self] in self?.openSettings() }
-        panelController = PanelController(state: state, preferences: preferences, media: media, shelf: shelf, focus: focus, battery: battery)
+        panelController = PanelController(state: state, preferences: preferences, media: media,
+                                          shelf: shelf, focus: focus, battery: battery, displays: displays)
         hotKey = HotKeyController { [weak self] in self?.panelController?.toggle() }
-        state.shortcutAvailable = hotKey?.registered ?? false
+        preferences.$shortcut.combineLatest(state.$recordingShortcut).sink { [weak self] binding, recording in
+            guard let self else { return }
+            self.hotKey?.configure(recording ? nil : binding)
+            self.state.shortcutAvailable = binding == nil || (self.hotKey?.registered ?? false)
+        }.store(in: &subscriptions)
+        preferences.$focusMinutes.combineLatest(preferences.$shortBreakMinutes, preferences.$longBreakMinutes)
+            .dropFirst().sink { [weak self] _ in
+                DispatchQueue.main.async { self?.focus.updateIdleDuration() }
+            }.store(in: &subscriptions)
         focus.onCompletion = { [weak self] in
             guard let self else { return }
             if self.preferences.playCompletionSound { NSSound(named: "Glass")?.play() }
-            self.panelController?.focusFinished()
+            if self.preferences.showOnCompletion { self.panelController?.focusFinished() }
         }
         installMenu()
         if !UserDefaults.standard.bool(forKey: "hasLaunched") {
@@ -64,12 +76,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     @objc private func openSettings() {
         if settingsWindow == nil {
-            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 480, height: 580),
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 540, height: 620),
                                   styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
             window.title = "NotchDock Settings"
             window.isReleasedWhenClosed = false
+            window.delegate = self
             window.contentView = NSHostingView(rootView: SettingsView()
-                .environmentObject(preferences).environmentObject(state).environmentObject(media))
+                .environmentObject(preferences).environmentObject(state).environmentObject(media).environmentObject(displays))
             window.center()
             settingsWindow = window
         }
@@ -77,6 +90,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settingsWindow?.makeKeyAndOrderFront(nil)
     }
     @objc private func quit() { NSApp.terminate(nil) }
+    func windowWillClose(_ notification: Notification) {
+        if (notification.object as? NSWindow) === settingsWindow { state.recordingShortcut = false }
+    }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
-    func applicationWillTerminate(_ notification: Notification) { hotKey?.stop(); panelController?.stop() }
+    func applicationWillTerminate(_ notification: Notification) {
+        hotKey?.stop(); panelController?.stop(); displays.stop(); subscriptions.removeAll()
+    }
 }

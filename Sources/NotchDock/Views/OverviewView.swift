@@ -78,17 +78,17 @@ private struct FocusMiniCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 9) {
             HStack(spacing: 5) {
-                Image(systemName: "timer").foregroundStyle(DockTheme.accent)
-                Text("FOCUS").tracking(1.7)
+                Image(systemName: focus.mode.symbol).foregroundStyle(DockTheme.accent)
+                Text(focus.mode.title.uppercased()).tracking(1.2)
                 Spacer()
                 Button { state.tab = .focus } label: { Image(systemName: "arrow.up.right") }
                     .buttonStyle(.plain).accessibilityLabel("Open focus timer")
             }.font(.system(size: 8, weight: .semibold))
             Text(focus.label).font(.system(size: 35, weight: .light, design: .rounded)).monospacedDigit()
-            Text(focus.session.phase == .finished ? "Time for a little break." : "Less noise. More flow.")
+            Text("\(focus.today.minutes) min focused today")
                 .font(.system(size: 10)).foregroundStyle(DockTheme.muted)
             Spacer(minLength: 0)
-            AccentButton(title: focus.isRunning ? "Pause" : (focus.session.phase == .paused ? "Resume" : "Start focus"),
+            AccentButton(title: focus.isRunning ? "Pause" : (focus.session.phase == .paused ? "Resume" : "Start \(focus.mode == .focus ? "focus" : "break")"),
                          symbol: focus.isRunning ? "pause.fill" : "play.fill", action: focus.toggle)
         }.padding(16).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading).dockCard()
     }

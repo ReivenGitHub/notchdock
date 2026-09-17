@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import NotchDockCore
 
 enum PanelTab: String, CaseIterable, Identifiable, Hashable {
     case overview = "Overview", shelf = "File shelf", focus = "Focus"
@@ -21,6 +22,10 @@ final class PanelState: ObservableObject {
     @Published var topPadding: CGFloat = 16
     @Published var dropTargeted = false
     @Published var shortcutAvailable = true
+    @Published var recordingShortcut = false
+    @Published var layoutMode: OverlayGeometry.Mode = .idle
+    @Published var hardwareNotchWidth: CGFloat = 0
+    @Published var blendsIntoNotch = false
     var showSettings: () -> Void = {}
     var togglePanel: () -> Void = {}
     var closePanel: () -> Void = {}

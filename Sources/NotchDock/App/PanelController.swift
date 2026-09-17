@@ -27,6 +27,8 @@ final class PanelController {
     private var screenObserver: NSObjectProtocol?
     private var wakeObserver: NSObjectProtocol?
     private var keyObserver: NSObjectProtocol?
+    private var globalPointerMonitor: Any?
+    private var localPointerMonitor: Any?
 
     init(state: PanelState, preferences: Preferences, media: MediaService,
          shelf: ShelfStore, focus: FocusStore, battery: BatteryService, displays: DisplayService) {
@@ -99,6 +101,16 @@ final class PanelController {
         ) { [weak self] _ in
             Task { @MainActor in guard let self else { return }; self.layout(expanded: self.state.expanded) }
         }
+        // Transparent pixels may pass events through to the application underneath.
+        // Observe only pointer events, never keys, and do not consume other apps' events.
+        let pointerEvents: NSEvent.EventTypeMask = [.mouseMoved, .leftMouseDragged, .leftMouseDown]
+        globalPointerMonitor = NSEvent.addGlobalMonitorForEvents(matching: pointerEvents) { [weak self] event in
+            self?.trackIdlePointer(event, allowClick: true)
+        }
+        localPointerMonitor = NSEvent.addLocalMonitorForEvents(matching: pointerEvents) { [weak self] event in
+            if let self { self.trackIdlePointer(event, allowClick: event.window !== self.panel) }
+            return event
+        }
         layout(expanded: false)
         panel.orderFrontRegardless()
     }
@@ -123,6 +135,18 @@ final class PanelController {
             openWork = work
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.18, execute: work)
         } else if !inside { scheduleClose() }
+    }
+    private func trackIdlePointer(_ event: NSEvent, allowClick: Bool) {
+        guard state.blendsIntoNotch, !state.expanded else { return }
+        let inside = panel.frame.contains(NSEvent.mouseLocation)
+        if inside, event.type == .leftMouseDragged {
+            state.tab = .shelf
+            expand()
+        } else if inside, event.type == .leftMouseDown, allowClick {
+            toggle()
+        } else if inside != pointerInside {
+            pointerChanged(inside)
+        }
     }
     private func scheduleClose() {
         closeWork?.cancel()
@@ -171,6 +195,8 @@ final class PanelController {
         if let screenObserver { NotificationCenter.default.removeObserver(screenObserver) }
         if let wakeObserver { NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver) }
         if let keyObserver { NotificationCenter.default.removeObserver(keyObserver) }
+        if let globalPointerMonitor { NSEvent.removeMonitor(globalPointerMonitor); self.globalPointerMonitor = nil }
+        if let localPointerMonitor { NSEvent.removeMonitor(localPointerMonitor); self.localPointerMonitor = nil }
         subscriptions.removeAll()
         panel.orderOut(nil)
     }

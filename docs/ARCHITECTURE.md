@@ -21,6 +21,8 @@ The panel physically shrinks when collapsed so an invisible expanded window does
 
 Idle, activity, and expanded geometry share the same screen top and center. On a physical notch, idle draws no content; the transparent window uses the camera width plus a two-point hover/drop lip below it. The camera cutout cannot display content. Activity wings keep a dedicated camera-width gap, and expanded controls sit below the safe area. Files on the shelf do not count as activity. Non-notched screens retain a visible 120 × 28 point handle. Disabling quiet idle restores the visible compact panel.
 
+While blended into the notch, local/global AppKit pointer monitors provide hover, click, and drag activation even if transparent pixels pass events to another app. They observe mouse movement/drag/click only, never keyboard input, and do not consume events. They are removed at shutdown. See [Apple's event-monitor documentation](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/EventOverview/MonitoringEvents/MonitoringEvents.html).
+
 One panel uses Automatic (first notched screen, then primary), the primary display, or a selected display UUID. Unplugging a selected screen temporarily falls back to Automatic while preserving the saved choice. Display-change and wake notifications reposition it. Reduce Motion disables resize animation. Text editing prevents automatic collapse until the panel loses keyboard focus. Full-screen and physical display behavior need the checks in [TESTING.md](TESTING.md).
 
 ## Music

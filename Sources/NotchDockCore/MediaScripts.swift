@@ -20,6 +20,7 @@ public enum MediaScripts {
         let bundleID = spotify ? "com.spotify.client" : "com.apple.Music"
         return """
         with timeout of 5 seconds
+            if application id "\(bundleID)" is not running then return "stopped"
             tell application id "\(bundleID)"
                 \(body)
             end tell
@@ -29,6 +30,7 @@ public enum MediaScripts {
     public static let musicArtwork = """
     on run argv
         with timeout of 5 seconds
+            if application id "com.apple.Music" is not running then return "none"
             tell application id "com.apple.Music"
                 if player state is stopped then return "none"
                 set selectedTrack to current track

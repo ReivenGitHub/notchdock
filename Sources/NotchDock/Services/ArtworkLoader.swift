@@ -1,6 +1,7 @@
-import AppKit
+import Foundation
 import ImageIO
 import NotchDockCore
+import UniformTypeIdentifiers
 
 private final class ArtworkRedirectPolicy: NSObject, URLSessionTaskDelegate {
     func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
@@ -14,7 +15,7 @@ private final class ArtworkRedirectPolicy: NSObject, URLSessionTaskDelegate {
 /// No title/artist search, account token, persistent network cache, or album-art database.
 final class ArtworkLoader {
     private let bridge: AppleScriptBridge
-    private let cache = NSCache<NSString, NSImage>()
+    private let cache = NSCache<NSString, NSData>()
     private let network: URLSession
     init(bridge: AppleScriptBridge) {
         self.bridge = bridge
@@ -28,9 +29,9 @@ final class ArtworkLoader {
         network = URLSession(configuration: config, delegate: ArtworkRedirectPolicy(), delegateQueue: nil)
     }
     func clearCache() { cache.removeAllObjects() }
-    func image(for metadata: PlaybackMetadata, player: PlayerApp) async -> NSImage? {
+    func thumbnail(for metadata: PlaybackMetadata, player: PlayerApp) async -> Data? {
         let key = metadata.artworkKey(player: player.rawValue) as NSString
-        if let image = cache.object(forKey: key) { return image }
+        if let data = cache.object(forKey: key) { return data as Data }
         let data: Data?
         if player == .spotify { data = await spotifyData(metadata.artworkURL) }
         else { data = await musicData(metadata) }
@@ -41,9 +42,14 @@ final class ArtworkLoader {
                 kCGImageSourceThumbnailMaxPixelSize: 512,
                 kCGImageSourceCreateThumbnailWithTransform: true
               ] as CFDictionary) else { return nil }
-        let image = NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
-        cache.setObject(image, forKey: key)
-        return image
+        // Only immutable data crosses back to the UI actor; AppKit images stay on the UI thread.
+        let output = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(output as CFMutableData, UTType.png.identifier as CFString, 1, nil) else { return nil }
+        CGImageDestinationAddImage(destination, cgImage, nil)
+        guard CGImageDestinationFinalize(destination), !Task.isCancelled else { return nil }
+        let thumbnail = output as Data
+        cache.setObject(thumbnail as NSData, forKey: key)
+        return thumbnail
     }
     private func spotifyData(_ text: String) async -> Data? {
         guard let url = ArtworkPolicy.spotifyURL(text), !Task.isCancelled else { return nil }

@@ -93,7 +93,7 @@ final class MediaService: ObservableObject {
     }
     func setVisible(_ visible: Bool) { panelVisible = visible; if visible { refresh() } }
     func enable() { preferences.mediaEnabled = true; error = nil; refresh() }
-    func retry() { error = nil; reloadArtwork(); refresh() }
+    func retry() { error = nil; reloadArtwork() }
     func reloadArtwork() {
         clearArtwork()
         artworkLoader.clearCache()
@@ -162,10 +162,10 @@ final class MediaService: ObservableObject {
         let generation = artworkRequest.generation
         artworkTask = Task { [weak self] in
             guard let self else { return }
-            let image = await self.artworkLoader.image(for: metadata, player: player)
+            let data = await self.artworkLoader.thumbnail(for: metadata, player: player)
             guard !Task.isCancelled, self.preferences.mediaEnabled,
                   self.artworkRequest.accepts(generation: generation, key: key) else { return }
-            self.artwork = image
+            self.artwork = data.flatMap { NSImage(data: $0) }
             self.artworkLoading = false
             self.artworkTask = nil
             self.nextArtworkAttempt = Date().addingTimeInterval(30)

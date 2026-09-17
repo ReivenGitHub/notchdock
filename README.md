@@ -45,6 +45,8 @@ Drag `build/NotchDock.app` into **Applications** to keep it. Enable launch at lo
 
 ### Download a GitHub build
 
+**[Download the verified version 0.2 Mac build](https://github.com/ReivenGitHub/notchdock/actions/runs/35181914960/artifacts/10480902953)** (Apple silicon + Intel; artifact expires October 1, 2026). Unzip the download and its included app ZIP. Quit the old app before replacing it in Applications. Existing files and timer state are preserved.
+
 Open [Actions](https://github.com/ReivenGitHub/notchdock/actions/workflows/macos.yml), choose a successful **Build NotchDock for macOS** run, and download its **NotchDock-macOS** artifact. Unzip the download and the included `NotchDock-macOS.zip` to get the `.app`. The workflow builds both architectures and includes a SHA-256 checksum. It does not automatically publish a Release.
 
 Local and CI builds are ad-hoc signed, not Apple notarized. A downloaded build may need explicit approval in **System Settings → Privacy & Security**. For broad distribution, use your Developer ID and the [signing instructions](docs/DISTRIBUTION.md).

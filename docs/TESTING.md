@@ -6,7 +6,7 @@ See [VALIDATION.md](VALIDATION.md) for results actually observed. A checked-in t
 
 `python3 scripts/validate-project.py` checks packaging inputs, shell syntax, property lists, links, and SVG syntax. It does not type-check Swift or run the app.
 
-`swift test --parallel` runs 55 XCTest cases on macOS (54 portable cases and one macOS-only script compilation case):
+`swift test --parallel` runs 56 XCTest cases on macOS (55 portable cases and one macOS-only script compilation case):
 
 - Nine timer cases cover pause/resume, sleep deadlines, one-shot completion, restart, repeated start, reset, JSON restoration, formatting, invalid durations, and backward clock movement.
 - Five shelf cases cover duplicates, existing items, URL rejection, capacity, and normalized paths.
@@ -25,10 +25,10 @@ The macOS workflow compiles the executable, runs the tests, builds arm64 and x86
 Use the bundled `.app`, not a bare command-line executable.
 
 - [ ] Controls remain below a hardware notch; the fallback works on a non-notched display.
-- [ ] With no live activity, unpin/close: no bar, icons, or border protrude outside the physical notch. Hover/drop just below it opens the panel.
-- [ ] Start/pause/reset a focus timer and play/pause/quit the selected player. Activity wings appear/disappear; a populated shelf alone stays quiet. Background music changes may take six seconds.
+- [ ] Unpin/close with no activity, a running or paused timer, and playing media: no bar, album art, icons, waveform, timer, or border protrudes beside the physical notch. Hover/drop just below it opens the panel.
+- [ ] Start/pause/reset a focus timer and play/pause/quit the selected player. State stays available after reopening, but the closed hardware notch remains visually unchanged. Background media changes may take six seconds.
 - [ ] Turn quiet idle off/on and confirm both the visible handle and quiet notch remain reachable.
-- [ ] Hover opens, pointer exit closes, pin prevents automatic closing, and closing restores desktop clicks.
+- [ ] Hover opens; moving outside the complete panel closes Overview, Files, Focus, and Mirror after the short delay. Pin prevents automatic closing, and closing restores desktop clicks.
 - [ ] ⌥⌘Space, menu bar fallback, and Escape with panel focus work.
 - [ ] Record a custom shortcut, reject plain typing keys, cancel with Escape, close Settings during capture, test a shortcut conflict, reset, disable, and relaunch.
 - [ ] Settings opens normally; closing it leaves the app running.
@@ -68,7 +68,7 @@ Use the bundled `.app`, not a bare command-line executable.
 - First implementation, not complete NotchNook feature parity.
 - No private system-wide Now Playing, arbitrary website inspection, clipboard history, weather, camera recording, or widget plugins. Browser detection is limited to YouTube/YouTube Music in Chrome and Safari.
 - One display hosts the panel; it does not follow the pointer across monitors.
-- Compact activity shows the playing album cover on the left and a timer or music indicator on the right. It does not show track text. Paused timers remain visible; paused music alone does not keep the notch active.
+- A closed hardware notch never shows compact activity. Album artwork, timers, and media controls remain available inside the expanded interface. Displays without a hardware notch retain a compact handle.
 - Artwork depends on what the selected desktop player exposes. Unavailable covers get a placeholder and retry; there is no title-based album search or unsupported-player fallback.
 - AirDrop needs compatible nearby devices and macOS sharing support. Compilation cannot verify actual discovery or transfer. Camera permission and physical hardware likewise require interactive testing.
 - The camera cutout has no display pixels; idle behavior is a transparent activation region, with content beside or below the camera when needed.

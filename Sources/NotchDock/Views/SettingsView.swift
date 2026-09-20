@@ -26,10 +26,12 @@ struct SettingsView: View {
             TabView {
                 Form {
                     Section("Your notch") {
-                        Toggle("Blend into the hardware notch when idle", isOn: $preferences.hideWhenIdle)
-                        Text("No extra bar when idle. Timer or music activity appears beside the camera. Displays without a notch keep a small handle.")
+                        Toggle("Use the smallest handle on displays without a notch", isOn: $preferences.hideWhenIdle)
+                        Text("On a MacBook with a hardware notch, nothing is drawn beside the camera while NotchDock is closed—even during media playback or a timer. Move the pointer below the notch to open it.")
                             .font(.caption).foregroundStyle(.secondary)
                         Toggle("Expand on hover", isOn: $preferences.expandOnHover)
+                        Text("When unpinned, the panel closes shortly after the pointer leaves the complete interface. Pin it only when you want it to remain open.")
+                            .font(.caption).foregroundStyle(.secondary)
                         Picker("Display", selection: $preferences.displayTarget) {
                             Text("Automatic · prefer a notched display").tag("automatic")
                             Text("Primary display").tag("primary")
@@ -75,7 +77,7 @@ struct SettingsView: View {
                             .font(.caption).foregroundStyle(.secondary)
                         Text("For YouTube controls and exact playback state, enable Allow JavaScript from Apple Events in Chrome or Safari’s Developer menu. macOS also asks for Automation permission. Only YouTube tabs are inspected.")
                             .font(.caption).foregroundStyle(.secondary)
-                        Text("Album covers appear beside the notch and in Overview. Music supplies local artwork; Spotify and YouTube covers use player-provided image URLs and are cached in memory only.")
+                        Text("Album covers appear in Overview while the panel is open. Music supplies local artwork; Spotify and YouTube covers use player-provided image URLs and are cached in memory only.")
                             .font(.caption).foregroundStyle(.secondary)
                     }
                     Section("Mirror") {

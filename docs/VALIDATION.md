@@ -1,5 +1,9 @@
 # Validation record
 
+## Version 0.5 verification
+
+Local static validation and diff checks are pending. Native compilation, all 56 XCTest cases, universal packaging, and architecture verification are pending the macOS workflow. Pointer-exit behavior and the physical notch remain on the [manual checklist](TESTING.md).
+
 ## Version 0.4 — verified macOS build, 2026-09-20
 
 [Final v0.4 build](https://github.com/ReivenGitHub/notchdock/actions/runs/35481340477) succeeded for source commit `c393faa9e822ff8345f65b469a84a43910650a1b` on macOS 15 with Apple Swift 6.1.2.

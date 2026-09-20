@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0 — Quiet notch and reliable auto-close
+
+- Removed all compact activity wings from notched MacBook displays. Closing the interface leaves no album art, timer, waveform, border, or icon beside the physical camera notch.
+- Kept media and timer state available inside the expanded interface without changing automatic playback detection.
+- Made global pointer tracking close every unpinned tab, including Mirror, shortly after the pointer leaves the complete panel.
+- Added regression coverage proving activity cannot select visible side-wing geometry on a hardware notch.
+
 ## 0.4.0 — Automatic media and YouTube
 
 - Added Automatic detection across running Apple Music, Spotify, Google Chrome, and Safari, preferring an actively playing source over paused sources.

@@ -24,6 +24,14 @@ public struct OverlayGeometry: Equatable {
         CGSize(width: min(screen.width - 24, max(204, hardwareWidth + 124)), height: max(34, safeTop + 7))
     }
     public var expandedSize: CGSize { CGSize(width: min(580, screen.width - 24), height: topPadding + 312) }
+    /// A physical camera notch is always completely quiet while the panel is closed.
+    /// Activity may change data, but never grows visible wings beside the camera.
+    public static func mode(expanded: Bool, hasHardwareNotch: Bool,
+                            hideWhenIdle: Bool, hasActivity: Bool) -> Mode {
+        if expanded { return .expanded }
+        if hasHardwareNotch { return .idle }
+        return hasActivity || !hideWhenIdle ? .activity : .idle
+    }
     public func frame(expanded: Bool) -> CGRect {
         frame(mode: expanded ? .expanded : .activity)
     }

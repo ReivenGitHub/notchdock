@@ -22,11 +22,11 @@ NotchDock is a macOS accessory application. Swift Package Manager builds the exe
 
 The panel physically shrinks when collapsed so an invisible expanded window does not block the desktop. It floats at status-bar level, joins Spaces and full-screen spaces, and does not activate the application merely on hover. The shortcut can give it keyboard focus. Expanded controls sit below `NSScreen.safeAreaInsets.top`; auxiliary screen areas estimate the camera housing width.
 
-Idle, activity, and expanded geometry share the same screen top and center. On a physical notch, idle draws no content; the transparent window uses the camera width plus a two-point hover/drop lip below it. The camera cutout cannot display content. Activity wings keep a dedicated camera-width gap, and expanded controls sit below the safe area. Files on the shelf do not count as activity. Non-notched screens retain a visible 120 × 28 point handle. Disabling quiet idle restores the visible compact panel.
+Idle, activity, and expanded geometry share the same screen top and center. On a physical notch, every closed state uses idle geometry and draws no content; the transparent window uses the camera width plus a two-point hover/drop lip below it. Media playback and timers never create side wings. Expanded controls sit below the safe area. Non-notched screens retain a visible handle and may use the larger compact state for activity.
 
 While blended into the notch, local/global AppKit pointer monitors provide hover, click, and drag activation even if transparent pixels pass events to another app. They observe mouse movement/drag/click only, never keyboard input, and do not consume events. They are removed at shutdown. See [Apple's event-monitor documentation](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/EventOverview/MonitoringEvents/MonitoringEvents.html).
 
-One panel uses Automatic (first notched screen, then primary), the primary display, or a selected display UUID. Unplugging a selected screen temporarily falls back to Automatic while preserving the saved choice. Display-change and wake notifications reposition it. Reduce Motion disables resize animation. Text editing prevents automatic collapse until the panel loses keyboard focus. Full-screen and physical display behavior need the checks in [TESTING.md](TESTING.md).
+One panel uses Automatic (first notched screen, then primary), the primary display, or a selected display UUID. Unplugging a selected screen temporarily falls back to Automatic while preserving the saved choice. Display-change and wake notifications reposition it. Reduce Motion disables resize animation. Local and global pointer monitors keep the inside/outside state current even after the pointer leaves the nonactivating panel. Every unpinned tab, including Mirror, closes after a short outside delay; active drops, native pickers, and text editing temporarily hold it open. Full-screen and physical display behavior need the checks in [TESTING.md](TESTING.md).
 
 ## Music
 
@@ -44,7 +44,7 @@ Metadata includes a track identifier and player-supplied artwork URL. Artwork ke
 
 Music supplies `raw data of artwork 1`; the script checks the track identifier and metadata, receives values as process arguments, and writes to a private temporary directory. The file is removed after loading. No untrusted string is interpolated into script code. Spotify and YouTube supply artwork URLs. Only HTTPS on the matching provider allowlist is accepted, including redirects: Spotify CDNs (`scdn.co`, `spotifycdn.com`, `spotifycdn.net`) or YouTube/Google image CDNs (`ytimg.com`, `googleusercontent.com`). Providers cannot use each other's allowlist. The ephemeral URL session has no cookie store, credentials, or disk cache, caps downloads at 8 MiB, and uses timeouts. Images are decoded as thumbnails up to 512 pixels and cached in memory (16 covers).
 
-The compact left wing shows album art whenever music is playing; an active timer can remain in the right wing. Expanded Overview also shows the album name. Missing artwork uses a labeled placeholder rather than another album's cover. Some streaming tracks/local Spotify files may not expose artwork.
+Expanded Overview shows album art and the album name. A closed hardware notch never shows artwork or other side content. Missing artwork uses a labeled placeholder rather than another album's cover. Some streaming tracks/local Spotify files may not expose artwork.
 
 ## File references
 
@@ -58,7 +58,7 @@ Files Tray and AirDrop share one root `DropDelegate`. `FileDropLayout` maps the 
 
 Opening the Mirror tab requests camera authorization if needed, then starts a video-only AVCaptureSession on a private serial queue. AVCaptureVideoPreviewLayer renders directly; there is no file output, audio input, screenshot, or frame-upload path. Horizontal mirroring uses the preview connection's mirroring support. Denied access, unavailable cameras, and interrupted sessions have visible recovery controls.
 
-Expanded state and the selected tab control the capture lifetime. Generation checks discard permission/start callbacks after a tab change or close, while queued stop operations release inputs. The Mirror tab suppresses hover auto-close until the user changes tabs or explicitly closes. Sleep, display sleep, and session deactivation stop capture and require an explicit restart if Mirror remains open. App termination also stops the session. The bundle includes NSCameraUsageDescription and the camera entitlement for hardened-runtime signing.
+Expanded state and the selected tab control the capture lifetime. Generation checks discard permission/start callbacks after a tab change or close, while queued stop operations release inputs. Mirror follows the same pointer-exit auto-close behavior as every other unpinned tab, which also stops capture. Sleep, display sleep, and session deactivation stop capture and require an explicit restart if Mirror remains open. App termination also stops the session. The bundle includes NSCameraUsageDescription and the camera entitlement for hardened-runtime signing.
 
 ## Timer
 

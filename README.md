@@ -6,14 +6,14 @@ A native macOS notch companion with automatic media detection, files and AirDrop
 
 ![NotchDock interface design preview](docs/preview.svg)
 
-> **Early version · 0.4.0.** See [recorded validation results](docs/VALIDATION.md) and the [macOS build workflow](https://github.com/ReivenGitHub/notchdock/actions/workflows/macos.yml) for actual build status. Native interaction and hardware testing remain separate from compilation. The image above illustrates the original design, not a current app screenshot.
+> **Early version · 0.5.0.** See [recorded validation results](docs/VALIDATION.md) and the [macOS build workflow](https://github.com/ReivenGitHub/notchdock/actions/workflows/macos.yml) for actual build status. Native interaction and hardware testing remain separate from compilation. The image above illustrates the original design, not a current app screenshot.
 
 ## What it does
 
 | Feature | Behavior |
 | --- | --- |
-| Quiet idle notch | Blends into the real camera notch when idle, with no extra visible bar or icons. Hover or click to open; pin to keep open. |
-| Activity indicators | A running or paused timer, or playing music, adds small indicators beside the camera. Stored files do not keep it expanded. |
+| Quiet closed notch | Nothing is drawn beside the real camera notch while the panel is closed, even when media or a timer is active. Hover or click below it to open. |
+| Automatic closing | The unpinned panel closes shortly after the pointer leaves the full interface. Pin it when you want it to remain open. |
 | Automatic media | Detects active playback from Apple Music, Spotify, or YouTube in Chrome/Safari. Shows source, title, artist/channel, album/site, progress, controls, and cover art. |
 | Files Tray | Up to 24 files/folders, a dedicated drop target, drag in/out, search, sorting, Quick Look, copy file/path, and Finder actions. |
 | AirDrop | A separate drop target opens Apple's recipient picker. Also available from each file's menu or the menu bar. |
@@ -26,7 +26,7 @@ A native macOS notch companion with automatic media detection, files and AirDrop
 
 Files remain at their original locations. Removing a shelf item removes only its reference. The shelf restores after relaunch using local bookmarks. Media support covers Apple Music, Spotify, and YouTube or YouTube Music tabs in Google Chrome and Safari. Other websites and players are not inspected.
 
-The physical camera cutout cannot display pixels. When idle on a notched Mac, NotchDock draws nothing outside it; a transparent two-point strip below it accepts hover and file drops. Controls appear beside or below the camera when active or expanded. Turn off **Settings → Notch → Blend into the hardware notch when idle** to keep a visible compact handle. Unpin and close the panel to return to idle.
+The physical camera cutout cannot display pixels. On a notched Mac, NotchDock draws nothing outside it whenever the panel is closed; a transparent two-point strip below it accepts hover and file drops. Media artwork, timers, and controls appear only after the interface opens. Unpin the panel to make it close automatically after the pointer leaves.
 
 ## Get it running on your Mac
 
@@ -71,8 +71,8 @@ This creates an exception for the app. It is not Apple notarization or a malware
 ## Use it
 
 - **Open:** hover at the top center, click the compact panel, use the menu bar, or press **⌥⌘Space**.
-- **Keep open:** click the pin. Click Close, press Escape while the panel has keyboard focus, or use the toggle shortcut to close it.
-- **Media:** choose **Automatic** in Settings to detect active Apple Music, Spotify, Chrome YouTube, or Safari YouTube playback. You can lock detection to one source instead. Approve macOS Automation access when asked. Playing media shows its cover beside the physical notch, including while a timer uses the other side. Overview shows the source, larger cover, title, artist/channel, album/site, progress, and controls.
+- **Automatic close:** leave the panel unpinned and it closes shortly after the pointer leaves the complete interface, including from Mirror. Click the pin only when you want it to remain open. Close, Escape, or the toggle shortcut also hides it.
+- **Media:** choose **Automatic** in Settings to detect active Apple Music, Spotify, Chrome YouTube, or Safari YouTube playback. You can lock detection to one source instead. Approve macOS Automation access when asked. Overview shows the cover, source, title, artist/channel, album/site, progress, and controls while the interface is open; nothing is added beside the closed hardware notch.
 - **YouTube setup:** in Chrome or Safari, enable **Allow JavaScript from Apple Events** in the browser's Developer menu. This lets NotchDock read and control the video element in YouTube tabs. If it is disabled, the app shows setup guidance. NotchDock does not inspect non-YouTube tabs.
 - **Files:** drag toward the notch to open Files. Drop on **Files Tray** to keep references or on **AirDrop** to choose a recipient. Search by name, sort, preview with the eye button, and drag cards out. Right-click a card to AirDrop, copy, open, reveal, or remove it. Originals stay in place.
 - **AirDrop:** dropping files opens Apple's sharing window; you choose the recipient there. Click the target or use the menu bar to choose files instead. Wi-Fi, Bluetooth, receiver discoverability, and supported files are handled by macOS. AirDropped files are not also added to the tray.

@@ -18,6 +18,8 @@ The initial source archive was prepared while repository creation was pending. O
 
 ## Next steps
 
+Version 0.5 removes all visible closed-state content beside a physical notch and makes pointer-exit auto-close consistent across every unpinned tab, including Mirror. A geometry policy regression brings the suite to 56 checks.
+
 Version 0.4 adds Automatic source selection plus YouTube/YouTube Music detection and controls in Chrome and Safari. It deliberately uses opt-in browser automation rather than private system media APIs. Provider-specific artwork allowlists and six new browser regression cases bring the suite to 55 checks.
 
 Version 0.3 adds the requested Files Tray/AirDrop destinations, a live camera mirror, and album art in compact/expanded music views. Native sharing and capture frameworks handle the new integrations; artwork uses local Music data or Spotify's supplied image URL. Regression coverage rises to 49 cases, including compilation of the actual Music scripts on macOS.

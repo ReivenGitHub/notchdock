@@ -13,6 +13,18 @@ final class OverlayGeometryTests: XCTestCase {
         XCTAssertEqual(geometry.idleSize.height, 34) // Transparent hover/drop lip, not a visible bar.
         XCTAssertLessThan(geometry.idleSize.width, geometry.compactSize.width)
     }
+    func testClosedHardwareNotchNeverShowsActivityWings() {
+        for hideWhenIdle in [false, true] {
+            for hasActivity in [false, true] {
+                XCTAssertEqual(OverlayGeometry.mode(expanded: false, hasHardwareNotch: true,
+                                                    hideWhenIdle: hideWhenIdle, hasActivity: hasActivity), .idle)
+            }
+        }
+        XCTAssertEqual(OverlayGeometry.mode(expanded: true, hasHardwareNotch: true,
+                                            hideWhenIdle: true, hasActivity: true), .expanded)
+        XCTAssertEqual(OverlayGeometry.mode(expanded: false, hasHardwareNotch: false,
+                                            hideWhenIdle: true, hasActivity: true), .activity)
+    }
     func testIdleFallbackKeepsAnAccessibleHandleWithoutHardwareNotch() {
         let geometry = OverlayGeometry(screen: CGRect(x: 0, y: 0, width: 1_920, height: 1_080), safeTop: 0, hardwareWidth: 0)
         XCTAssertFalse(geometry.hasHardwareNotch)

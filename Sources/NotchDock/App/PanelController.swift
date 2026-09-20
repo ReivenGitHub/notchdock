@@ -85,8 +85,8 @@ final class PanelController {
         }.store(in: &subscriptions)
         state.$expanded.combineLatest(state.$tab).map { $0 && $1 == .mirror }.removeDuplicates()
             .sink { [weak self] visible in self?.mirror.setVisible(visible) }.store(in: &subscriptions)
-        state.$tab.dropFirst().sink { [weak self] tab in
-            if tab != .mirror { DispatchQueue.main.async { self?.scheduleClose() } }
+        state.$tab.dropFirst().sink { [weak self] _ in
+            DispatchQueue.main.async { self?.scheduleClose() }
         }.store(in: &subscriptions)
         preferences.$displayTarget.combineLatest(preferences.$hideWhenIdle).dropFirst().sink { [weak self] _ in
             DispatchQueue.main.async { guard let self else { return }; self.layout(expanded: self.state.expanded) }
@@ -127,7 +127,13 @@ final class PanelController {
         if state.expanded { collapse() }
         else { expand(); panel.makeKey() }
     }
-    func expand() { cancelPending(); state.expanded = true; panel.orderFrontRegardless() }
+    func expand() {
+        cancelPending()
+        state.expanded = true
+        panel.orderFrontRegardless()
+        pointerInside = panel.frame.contains(NSEvent.mouseLocation)
+        if !pointerInside { scheduleClose() }
+    }
     func collapse() { cancelPending(); state.pinned = false; state.expanded = false }
     func focusFinished() {
         state.tab = .focus
@@ -146,8 +152,12 @@ final class PanelController {
         } else if !inside { scheduleClose() }
     }
     private func trackIdlePointer(_ event: NSEvent, allowClick: Bool) {
-        guard state.blendsIntoNotch, !state.expanded else { return }
         let inside = panel.frame.contains(NSEvent.mouseLocation)
+        if state.expanded {
+            if inside != pointerInside { pointerChanged(inside) }
+            return
+        }
+        guard state.blendsIntoNotch else { return }
         if inside, event.type == .leftMouseDragged {
             state.tab = .shelf
             expand()
@@ -159,10 +169,10 @@ final class PanelController {
     }
     private func scheduleClose() {
         closeWork?.cancel()
-        guard state.expanded, state.tab != .mirror, !state.pinned, !state.dropTargeted, !pointerInside,
+        guard state.expanded, !state.pinned, !state.dropTargeted, !pointerInside,
               interactionCount == 0, !isEditingText else { return }
         let work = DispatchWorkItem { [weak self] in
-            guard let self, self.state.tab != .mirror, !self.state.pinned, !self.state.dropTargeted,
+            guard let self, !self.state.pinned, !self.state.dropTargeted,
                   !self.pointerInside, self.interactionCount == 0, !self.isEditingText else { return }
             self.state.expanded = false
         }
@@ -186,7 +196,8 @@ final class PanelController {
         let geometry = OverlayGeometry(screen: screen.frame, safeTop: screen.safeAreaInsets.top, hardwareWidth: notchWidth)
         state.topPadding = geometry.topPadding
         let active = focus.hasActiveSession || (preferences.mediaEnabled && media.track.playing)
-        let mode: OverlayGeometry.Mode = expanded ? .expanded : (active || !preferences.hideWhenIdle ? .activity : .idle)
+        let mode = OverlayGeometry.mode(expanded: expanded, hasHardwareNotch: geometry.hasHardwareNotch,
+                                        hideWhenIdle: preferences.hideWhenIdle, hasActivity: active)
         state.layoutMode = mode
         state.hardwareNotchWidth = geometry.hasHardwareNotch ? notchWidth : 0
         state.blendsIntoNotch = geometry.hasHardwareNotch && mode == .idle

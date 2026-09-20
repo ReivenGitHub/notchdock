@@ -47,7 +47,9 @@ Drag `build/NotchDock.app` into **Applications** to keep it. Enable launch at lo
 
 ### Download a GitHub build
 
-Version 0.3 adds AirDrop, Mirror, and album artwork. Its native build results and download are recorded in [VALIDATION.md](docs/VALIDATION.md) when available. Quit the old app before replacing it in Applications; existing shelf references and timer state are preserved.
+**[Download NotchDock 0.3 for Apple silicon and Intel](https://github.com/ReivenGitHub/notchdock/actions/runs/35225569221/artifacts/10498529932)** — native builds and all 49 checks passed. See [verification details](docs/VALIDATION.md). The artifact expires October 1, 2026.
+
+Unzip the download and the included app ZIP. Quit the old app before replacing it in Applications; existing shelf references and timer state are preserved.
 
 Open [Actions](https://github.com/ReivenGitHub/notchdock/actions/workflows/macos.yml), choose a successful **Build NotchDock for macOS** run, and download its **NotchDock-macOS** artifact. Unzip the download and the included `NotchDock-macOS.zip` to get the `.app`. The workflow builds both architectures and includes a SHA-256 checksum. It does not automatically publish a Release.
 

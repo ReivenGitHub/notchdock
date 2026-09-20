@@ -1,8 +1,10 @@
 # Validation record
 
-## Version 0.5 verification
+## Version 0.5 — verified macOS build, 2026-09-20
 
-Local static validation and diff checks are pending. Native compilation, all 56 XCTest cases, universal packaging, and architecture verification are pending the macOS workflow. Pointer-exit behavior and the physical notch remain on the [manual checklist](TESTING.md).
+[Final v0.5 build](https://github.com/ReivenGitHub/notchdock/actions/runs/35482583403) succeeded for source commit `a81eac5afccce6176c5b333a5de5a326bf94aac4` on macOS 15 with Apple Swift 6.1.2. Static validation passed, all 56 XCTest cases executed and passed, both Apple-silicon and Intel release builds completed, and `lipo` verified the universal executable. The Swift build produced no compiler warnings or errors. Signature structure, property-list validation, archive creation, checksum creation, and artifact upload also passed.
+
+[Download NotchDock 0.5 for Apple silicon and Intel](https://github.com/ReivenGitHub/notchdock/actions/runs/35482583403/artifacts/10596049661) (expires 2026-10-04). Pointer-exit behavior and the absence of side pixels around each physical notch shape still require the [manual checks](TESTING.md); the build is ad-hoc signed and not notarized.
 
 ## Version 0.4 — verified macOS build, 2026-09-20
 

@@ -6,12 +6,15 @@ import UniformTypeIdentifiers
 private final class ArtworkRedirectPolicy: NSObject, URLSessionTaskDelegate {
     func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
                     newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) {
-        let allowed = request.url.flatMap { ArtworkPolicy.spotifyURL($0.absoluteString) } != nil
+        let allowed = request.url.map {
+            ArtworkPolicy.remoteURL($0.absoluteString, provider: "spotify") != nil
+                || ArtworkPolicy.remoteURL($0.absoluteString, provider: "youtubeChrome") != nil
+        } ?? false
         completionHandler(allowed ? request : nil)
     }
 }
 
-/// Artwork comes from Music's local scripting data or Spotify's supplied image URL.
+/// Artwork comes from Music's local scripting data or a supported player's supplied image URL.
 /// No title/artist search, account token, persistent network cache, or album-art database.
 final class ArtworkLoader {
     private let bridge: AppleScriptBridge
@@ -33,8 +36,8 @@ final class ArtworkLoader {
         let key = metadata.artworkKey(player: player.rawValue) as NSString
         if let data = cache.object(forKey: key) { return data as Data }
         let data: Data?
-        if player == .spotify { data = await spotifyData(metadata.artworkURL) }
-        else { data = await musicData(metadata) }
+        if player == .music { data = await musicData(metadata) }
+        else { data = await remoteData(metadata.artworkURL, provider: player.rawValue) }
         guard !Task.isCancelled, let data, !data.isEmpty, data.count <= ArtworkPolicy.maximumBytes,
               let source = CGImageSourceCreateWithData(data as CFData, nil),
               let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, [
@@ -51,8 +54,8 @@ final class ArtworkLoader {
         cache.setObject(thumbnail as NSData, forKey: key)
         return thumbnail
     }
-    private func spotifyData(_ text: String) async -> Data? {
-        guard let url = ArtworkPolicy.spotifyURL(text), !Task.isCancelled else { return nil }
+    private func remoteData(_ text: String, provider: String) async -> Data? {
+        guard let url = ArtworkPolicy.remoteURL(text, provider: provider), !Task.isCancelled else { return nil }
         do {
             var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData)
             request.setValue("image/*", forHTTPHeaderField: "Accept")

@@ -17,12 +17,12 @@ private struct MusicCard: View {
                 Image(systemName: "waveform").foregroundStyle(DockTheme.accent)
                 Text("NOW PLAYING").tracking(1.7)
                 Spacer()
-                Text(preferences.player.title).foregroundStyle(DockTheme.muted)
+                Text(media.sourceTitle).foregroundStyle(DockTheme.muted)
             }.font(.system(size: 8, weight: .semibold))
             if !preferences.mediaEnabled {
                 Text("Your soundtrack,\nwithin reach.").font(.system(size: 19, weight: .medium))
                 Spacer(minLength: 0)
-                AccentButton(title: "Connect music", symbol: "music.note", action: media.enable)
+                AccentButton(title: "Connect media", symbol: "play.rectangle", action: media.enable)
             } else if let error = media.error {
                 Text(error).font(.system(size: 11)).foregroundStyle(.white.opacity(0.7))
                     .lineLimit(4).fixedSize(horizontal: false, vertical: true)

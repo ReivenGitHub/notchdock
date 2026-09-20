@@ -6,7 +6,7 @@ See [VALIDATION.md](VALIDATION.md) for results actually observed. A checked-in t
 
 `python3 scripts/validate-project.py` checks packaging inputs, shell syntax, property lists, links, and SVG syntax. It does not type-check Swift or run the app.
 
-`swift test --parallel` runs 49 XCTest cases on macOS (48 portable cases and one macOS-only script compilation case):
+`swift test --parallel` runs 55 XCTest cases on macOS (54 portable cases and one macOS-only script compilation case):
 
 - Nine timer cases cover pause/resume, sleep deadlines, one-shot completion, restart, repeated start, reset, JSON restoration, formatting, invalid durations, and backward clock movement.
 - Five shelf cases cover duplicates, existing items, URL rejection, capacity, and normalized paths.
@@ -16,6 +16,7 @@ See [VALIDATION.md](VALIDATION.md) for results actually observed. A checked-in t
 - Ten media/artwork cases cover metadata and album fields, paused tracks, identity changes, malformed results, numeric handling, allowed/blocked artwork URLs, and stale or canceled image results.
 - Four drop-routing cases cover the AirDrop target, tray/gap/header/card areas, compact/other-tab fallback, and changing notch geometry.
 - One macOS case compiles the actual Music metadata and artwork scripts against the installed dictionary without executing them or requesting Automation permission. Spotify requires separate live-app verification.
+- Six browser-media cases cover YouTube/Google artwork allowlists, provider isolation, fixed metadata fields, YouTube-only tab filtering, disabled-JavaScript recovery markers, and fixed playback commands. The macOS script test also compiles Safari automation and Chrome automation when Chrome is installed on the runner.
 
 The macOS workflow compiles the executable, runs the tests, builds arm64 and x86_64 binaries, combines them, verifies signature structure, and packages an artifact. A successful build does not confirm interactive integration behavior.
 
@@ -37,6 +38,9 @@ Use the bundled `.app`, not a bare command-line executable.
 - [ ] VoiceOver identifies tabs, playback, timer, files, and settings controls.
 - [ ] Apple Music: consent, denied consent, retry, playback controls, no track, and player quit.
 - [ ] Spotify: repeat the music checks; switch players during a pending poll.
+- [ ] Automatic: play one supported source at a time, then multiple sources. Playing media wins over paused media; the displayed source and controls match the selected track.
+- [ ] Chrome and Safari YouTube: disabled JavaScript-from-Apple-Events guidance, Automation consent/denial, ordinary YouTube, YouTube Music, multiple tabs, paused tabs, play/pause, previous/next availability, browser quit, and tab close.
+- [ ] Confirm non-YouTube browser tabs are never inspected and unsupported players do not appear as detected. Check that switching from a YouTube source to native playback clears stale browser artwork.
 - [ ] Music and Spotify: real cover and album name appear in Overview; cover appears beside the camera while playing, even with a focus timer on the other side.
 - [ ] Rapidly skip tracks and change players; old artwork never replaces the current cover. Pause/resume preserves the cover in Overview, stopped playback clears it, and disabled music clears all cover state.
 - [ ] Test missing Music artwork, Spotify local files, offline artwork downloads, and Reload album artwork. A placeholder must not block playback controls or timer display.
@@ -62,7 +66,7 @@ Use the bundled `.app`, not a bare command-line executable.
 ## Limits
 
 - First implementation, not complete NotchNook feature parity.
-- No browser audio, private system-wide Now Playing, clipboard history, weather, camera recording, or widget plugins.
+- No private system-wide Now Playing, arbitrary website inspection, clipboard history, weather, camera recording, or widget plugins. Browser detection is limited to YouTube/YouTube Music in Chrome and Safari.
 - One display hosts the panel; it does not follow the pointer across monitors.
 - Compact activity shows the playing album cover on the left and a timer or music indicator on the right. It does not show track text. Paused timers remain visible; paused music alone does not keep the notch active.
 - Artwork depends on what the selected desktop player exposes. Unavailable covers get a placeholder and retry; there is no title-based album search or unsupported-player fallback.

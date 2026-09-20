@@ -7,15 +7,15 @@
     <key>CFBundleIdentifier</key><string>app.notchdock.desktop</string>
     <key>CFBundleExecutable</key><string>NotchDock</string>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>0.3.0</string>
-    <key>CFBundleVersion</key><string>3</string>
+    <key>CFBundleShortVersionString</key><string>0.4.0</string>
+    <key>CFBundleVersion</key><string>4</string>
     <key>CFBundleIconFile</key><string>AppIcon</string>
     <key>LSMinimumSystemVersion</key><string>13.0</string>
     <key>LSUIElement</key><true/>
     <key>NSHighResolutionCapable</key><true/>
     <key>NSPrincipalClass</key><string>NSApplication</string>
     <key>NSAppleEventsUsageDescription</key>
-    <string>NotchDock uses Automation to show the current track and control playback in the music app you choose.</string>
+    <string>NotchDock uses Automation to show and control playback in the music app or supported YouTube browser you choose.</string>
     <key>NSCameraUsageDescription</key>
     <string>NotchDock uses your camera for a live mirror only while the Mirror tab is open. It does not record photos, video, or audio.</string>
 </dict>

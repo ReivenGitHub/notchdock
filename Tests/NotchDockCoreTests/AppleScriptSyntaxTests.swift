@@ -8,7 +8,12 @@ final class AppleScriptSyntaxTests: XCTestCase {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("NotchDock-Script-Test-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: false)
         defer { try? FileManager.default.removeItem(at: folder) }
-        for (index, source) in [MediaScripts.metadata(spotify: false), MediaScripts.musicArtwork].enumerated() {
+        var sources = [MediaScripts.metadata(spotify: false), MediaScripts.musicArtwork,
+                       MediaScripts.youtube(browser: .safari)]
+        if FileManager.default.fileExists(atPath: "/Applications/Google Chrome.app") {
+            sources.append(MediaScripts.youtube(browser: .chrome))
+        }
+        for (index, source) in sources.enumerated() {
             let script = folder.appendingPathComponent("script-\(index).applescript")
             try source.write(to: script, atomically: true, encoding: .utf8)
             let process = Process()

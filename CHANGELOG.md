@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.0 — Automatic media and YouTube
+
+- Added Automatic detection across running Apple Music, Spotify, Google Chrome, and Safari, preferring an actively playing source over paused sources.
+- Added YouTube and YouTube Music metadata in Chrome and Safari: title, channel/artist, album/site, progress, play/pause, previous/next when available, and player-supplied thumbnails.
+- Added explicit Chrome and Safari source choices alongside Automatic, Apple Music, and Spotify.
+- Kept browser automation opt-in: users enable JavaScript from Apple Events in the browser and approve macOS Automation. Only YouTube tabs are inspected.
+- Extended the bounded artwork allowlist to YouTube/Google image CDNs without cookies, credentials, or persistent caching.
+- Added browser-script, command, source-policy, and artwork-domain regression coverage (55 XCTest cases total).
+- Continued to avoid Apple's private MediaRemote framework; unsupported apps and websites are not presented as detected media.
+
 ## 0.3.0 — Files Tray, AirDrop, Mirror, and album covers
 
 - Added separate Files Tray and AirDrop drop targets, with a single drop router to avoid duplicate actions.

@@ -35,15 +35,21 @@ public struct PlaybackMetadata: Equatable {
 
 public enum ArtworkPolicy {
     public static let maximumBytes = 8 * 1_024 * 1_024
-    /// Download only artwork URLs supplied by Spotify, including redirects within its image CDNs.
-    public static func spotifyURL(_ text: String) -> URL? {
+    /// Download only artwork URLs supplied by supported players, including safe CDN redirects.
+    public static func remoteURL(_ text: String, provider: String) -> URL? {
         guard let url = URL(string: text), url.scheme?.lowercased() == "https",
               url.user == nil, url.password == nil, url.port == nil || url.port == 443,
               let host = url.host?.lowercased() else { return nil }
-        let domains = ["scdn.co", "spotifycdn.com", "spotifycdn.net"]
+        let domains: [String]
+        switch provider {
+        case "spotify": domains = ["scdn.co", "spotifycdn.com", "spotifycdn.net"]
+        case "youtubeChrome", "youtubeSafari": domains = ["ytimg.com", "googleusercontent.com"]
+        default: return nil
+        }
         guard domains.contains(where: { host == $0 || host.hasSuffix("." + $0) }) else { return nil }
         return url
     }
+    public static func spotifyURL(_ text: String) -> URL? { remoteURL(text, provider: "spotify") }
 }
 
 /// Invalidates old asynchronous image results even when a track is left and then revisited.

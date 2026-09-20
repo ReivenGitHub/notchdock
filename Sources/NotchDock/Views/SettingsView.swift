@@ -66,14 +66,16 @@ struct SettingsView: View {
                     }
                 }.formStyle(.grouped).tabItem { Label("Focus", systemImage: "timer") }
                 Form {
-                    Section("Music") {
-                        Toggle("Enable music controls", isOn: $preferences.mediaEnabled)
-                        Picker("Player", selection: $preferences.player) {
+                    Section("Media") {
+                        Toggle("Enable media detection and controls", isOn: $preferences.mediaEnabled)
+                        Picker("Source", selection: $preferences.player) {
                             ForEach(PlayerApp.allCases) { player in Text(player.title).tag(player) }
                         }
-                        Text("macOS asks for Automation permission for the player you choose. The selected app is checked every 6 seconds while collapsed, and every 2 seconds when expanded. Browser audio is not supported.")
+                        Text("Automatic checks running Apple Music, Spotify, Chrome, and Safari, then shows the active source. The selected source is checked every 6 seconds while collapsed and every 2 seconds when expanded.")
                             .font(.caption).foregroundStyle(.secondary)
-                        Text("Album covers appear beside the notch and in Overview. Music supplies local artwork; Spotify covers download from its image servers and are cached in memory only.")
+                        Text("For YouTube controls and exact playback state, enable Allow JavaScript from Apple Events in Chrome or Safari’s Developer menu. macOS also asks for Automation permission. Only YouTube tabs are inspected.")
+                            .font(.caption).foregroundStyle(.secondary)
+                        Text("Album covers appear beside the notch and in Overview. Music supplies local artwork; Spotify and YouTube covers use player-provided image URLs and are cached in memory only.")
                             .font(.caption).foregroundStyle(.secondary)
                     }
                     Section("Mirror") {
@@ -87,7 +89,7 @@ struct SettingsView: View {
                             if let url = try? LocalStore.location("shelf.json") { NSWorkspace.shared.open(url.deletingLastPathComponent()) }
                         }
                     }
-                }.formStyle(.grouped).tabItem { Label("Music & Privacy", systemImage: "music.note") }
+                }.formStyle(.grouped).tabItem { Label("Media & Privacy", systemImage: "play.rectangle") }
             }.padding(.horizontal, 16).padding(.bottom, 16)
         }.frame(width: 540, height: 620).onAppear { launchAtLogin = SMAppService.mainApp.status == .enabled }
     }

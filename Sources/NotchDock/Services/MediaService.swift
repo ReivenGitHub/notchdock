@@ -5,12 +5,13 @@ import NotchDockCore
 
 struct NowPlaying {
     var title = "Nothing playing"
-    var artist = "Open your music app to begin."
+    var artist = "Start a supported media source to begin."
     var album = ""
     var playing = false
     var position: Double = 0
     var duration: Double = 0
     var hasTrack = false
+    var source: PlayerApp?
     var progress: Double { duration > 0 ? min(1, max(0, position / duration)) : 0 }
 }
 enum ScriptResult { case success(String), failure(String) }
@@ -38,6 +39,8 @@ final class AppleScriptBridge {
                 if task.terminationStatus == 0 { continuation.resume(returning: .success(output)) }
                 else if output.contains("-1743") {
                     continuation.resume(returning: .failure("Allow NotchDock in System Settings → Privacy & Security → Automation, then retry."))
+                } else if output.localizedCaseInsensitiveContains("javascript") {
+                    continuation.resume(returning: .failure("Enable Allow JavaScript from Apple Events in the browser's Developer menu, then retry."))
                 } else {
                     continuation.resume(returning: .failure("Music is unavailable. Open the selected app, start a track, and retry."))
                 }
@@ -66,6 +69,7 @@ final class MediaService: ObservableObject {
     private var runningRequest = false
     private var connectionVersion = 0
     private var backgroundTicks = 0
+    var sourceTitle: String { track.source?.title ?? preferences.player.title }
 
     init(preferences: Preferences) {
         self.preferences = preferences
@@ -100,7 +104,16 @@ final class MediaService: ObservableObject {
         refresh()
     }
     func openPlayer() {
-        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: preferences.player.bundleID) else {
+        let player = preferences.player == .automatic ? .youtubeChrome : preferences.player
+        if player.isBrowser, let youtube = URL(string: "https://www.youtube.com") {
+            if let bundleID = player.bundleID,
+               let app = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
+                NSWorkspace.shared.open([youtube], withApplicationAt: app, configuration: .init(), completionHandler: nil)
+            } else { NSWorkspace.shared.open(youtube) }
+            return
+        }
+        guard let bundleID = player.bundleID,
+              let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) else {
             error = "\(preferences.player.title) is not installed. Select another player in Settings."
             return
         }
@@ -108,12 +121,13 @@ final class MediaService: ObservableObject {
     }
     func send(_ command: Command) {
         guard preferences.mediaEnabled, !busy else { return }
-        let player = preferences.player
+        let player = track.source ?? preferences.player
+        guard player != .automatic else { error = "Start playback in a supported app or YouTube tab first."; return }
         guard isRunning(player) else { openPlayer(); return }
         busy = true
         let version = connectionVersion
         Task {
-            let result = await bridge.run(Self.script(player: player, body: command.rawValue))
+            let result = await commandResult(command, player: player)
             busy = false
             guard version == connectionVersion else { return }
             if case .failure(let message) = result { error = message; track = NowPlaying(); clearArtwork() }
@@ -122,34 +136,71 @@ final class MediaService: ObservableObject {
     }
     func refresh() {
         guard preferences.mediaEnabled, !runningRequest, !busy else { return }
-        let player = preferences.player
-        guard isRunning(player) else {
-            track = NowPlaying(artist: "Open \(player.title) to begin.")
-            clearArtwork()
-            return
-        }
         runningRequest = true
         let version = connectionVersion
-        let source = MediaScripts.metadata(spotify: player == .spotify)
         Task {
-            let result = await bridge.run(source)
+            let candidates = candidatePlayers()
+            var selected: (PlaybackMetadata, PlayerApp)?
+            var paused: (PlaybackMetadata, PlayerApp)?
+            var firstFailure: String?
+            for player in candidates where isRunning(player) {
+                let result = await metadataResult(player)
+                switch result {
+                case .failure(let message): if firstFailure == nil { firstFailure = message }
+                case .success(let output):
+                    if output == "browser-js-disabled" {
+                        if firstFailure == nil { firstFailure = "Enable Allow JavaScript from Apple Events in \(player.title), then retry." }
+                    } else if let metadata = PlaybackMetadata(scriptOutput: output) {
+                        if metadata.playing { selected = (metadata, player); break }
+                        if paused == nil { paused = (metadata, player) }
+                    }
+                }
+            }
+            if selected == nil { selected = paused }
             runningRequest = false
             guard version == connectionVersion, preferences.mediaEnabled else { return }
-            switch result {
-            case .failure(let message): error = message; track = NowPlaying(); clearArtwork()
-            case .success(let output):
+            if let (metadata, player) = selected {
                 error = nil
-                guard let metadata = PlaybackMetadata(scriptOutput: output) else {
-                    track = NowPlaying(); clearArtwork(); return
-                }
                 track = NowPlaying(title: metadata.title, artist: metadata.artist, album: metadata.album, playing: metadata.playing,
-                                   position: metadata.position, duration: metadata.duration, hasTrack: true)
+                                   position: metadata.position, duration: metadata.duration, hasTrack: true, source: player)
                 updateArtwork(metadata, player: player)
+            } else {
+                track = NowPlaying(artist: preferences.player == .automatic
+                    ? "Start Apple Music, Spotify, or a YouTube tab."
+                    : "Open \(preferences.player.title) to begin.")
+                clearArtwork()
+                error = firstFailure
             }
         }
     }
     private func isRunning(_ player: PlayerApp) -> Bool {
-        !NSRunningApplication.runningApplications(withBundleIdentifier: player.bundleID).isEmpty
+        guard let bundleID = player.bundleID else { return false }
+        return !NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).isEmpty
+    }
+    private func candidatePlayers() -> [PlayerApp] {
+        guard preferences.player == .automatic else { return [preferences.player] }
+        var result: [PlayerApp] = []
+        if let current = track.source { result.append(current) }
+        result.append(contentsOf: PlayerApp.detectable.filter { !result.contains($0) })
+        return result
+    }
+    private func metadataResult(_ player: PlayerApp) async -> ScriptResult {
+        switch player {
+        case .music, .spotify:
+            return await bridge.run(MediaScripts.metadata(spotify: player == .spotify))
+        case .youtubeChrome, .youtubeSafari:
+            let browser: MediaScripts.Browser = player == .youtubeChrome ? .chrome : .safari
+            return await bridge.run(MediaScripts.youtube(browser: browser), arguments: [MediaScripts.youtubeMetadataJavaScript])
+        case .automatic: return .success("stopped")
+        }
+    }
+    private func commandResult(_ command: Command, player: PlayerApp) async -> ScriptResult {
+        if player.isBrowser {
+            let browser: MediaScripts.Browser = player == .youtubeChrome ? .chrome : .safari
+            return await bridge.run(MediaScripts.youtube(browser: browser),
+                                    arguments: [MediaScripts.youtubeCommandJavaScript(command.rawValue)])
+        }
+        return await bridge.run(Self.script(player: player, body: command.rawValue))
     }
     private func updateArtwork(_ metadata: PlaybackMetadata, player: PlayerApp) {
         let key = metadata.artworkKey(player: player.rawValue)
@@ -186,9 +237,10 @@ final class MediaService: ObservableObject {
         artworkLoader.clearCache()
     }
     private static func script(player: PlayerApp, body: String) -> String {
-        """
+        guard let bundleID = player.bundleID else { return "return \"stopped\"" }
+        return """
         with timeout of 5 seconds
-            tell application id "\(player.bundleID)"
+            tell application id "\(bundleID)"
                 \(body)
             end tell
         end timeout

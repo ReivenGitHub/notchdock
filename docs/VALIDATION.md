@@ -1,27 +1,14 @@
 # Validation record
 
+## Version 0.4 verification
+
+Local packaging, permission metadata, shell syntax, documentation links, and diff checks passed. Native compilation, all 55 XCTest cases, universal packaging, and browser-script compilation are pending the macOS workflow. Live YouTube detection and controls require a browser with JavaScript from Apple Events enabled and remain on the [manual checklist](TESTING.md).
+
 ## Version 0.3 — verified macOS build, 2026-09-17
 
-[Final v0.3 build](https://github.com/ReivenGitHub/notchdock/actions/runs/35225569221) succeeded for source commit `9bb2acae53c35abe60bb469ecb61ae68d2f538c0`. Results were checked from the completed job and logs on September 20.
+[Final v0.3 build](https://github.com/ReivenGitHub/notchdock/actions/runs/35225569221) succeeded for source commit `9bb2acae53c35abe60bb469ecb61ae68d2f538c0`. Native compilation, all 49 tests, both release architectures, universal executable verification, permission metadata, signature structure, property-list validation, and packaging passed. The build had no Swift compiler warnings or errors. Live player artwork, AirDrop transfers, camera, and physical-notch interaction were not tested by CI.
 
-| Check | Observed result |
-| --- | --- |
-| Native compilation on macOS 15, Apple Swift 6.1.2 | Passed; no Swift compiler warnings or errors. |
-| XCTest cases | All 49 executed and passed, including Music metadata/artwork script compilation without execution. |
-| Apple silicon and Intel release builds | Both passed. |
-| Universal executable | Passed architecture verification for arm64 and x86_64. |
-| Permission metadata, signature structure, property list, packaging | Passed. Signature is ad-hoc, not notarized. |
-| Live player artwork, AirDrop transfers, camera and physical notch | Not interactively tested; see the [manual checklist](TESTING.md). |
-
-The final source fixes the artwork concurrency warning by returning immutable thumbnail data to the UI actor. Queued scripts also check whether the player is still running before querying it.
-
-### Download version 0.3
-
-[Download NotchDock 0.3 for Apple silicon and Intel](https://github.com/ReivenGitHub/notchdock/actions/runs/35225569221/artifacts/10498529932)
-
-Unzip the artifact and its included `NotchDock-macOS.zip`. Quit the older app, then replace NotchDock in Applications. Existing shelf references and timer state are preserved. The artifact includes `SHA256SUMS.txt` and expires **2026-10-01**.
-
-Files now has separate Files Tray and AirDrop targets. Mirror requests camera access when opened and stops capture when closed or hidden. Enable the selected desktop music player to see artwork beside the notch and in Overview; artwork availability depends on the player and track. The existing first-launch approval instructions still apply.
+[Download NotchDock 0.3 for Apple silicon and Intel](https://github.com/ReivenGitHub/notchdock/actions/runs/35225569221/artifacts/10498529932) (expires 2026-10-01).
 
 ## Version 0.2 — verified macOS build, 2026-09-17
 

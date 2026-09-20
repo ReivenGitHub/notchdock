@@ -3,10 +3,28 @@ import Foundation
 import NotchDockCore
 
 enum PlayerApp: String, CaseIterable, Identifiable, Hashable {
-    case music, spotify
+    case automatic, music, spotify, youtubeChrome, youtubeSafari
     var id: String { rawValue }
-    var title: String { self == .music ? "Apple Music" : "Spotify" }
-    var bundleID: String { self == .music ? "com.apple.Music" : "com.spotify.client" }
+    var title: String {
+        switch self {
+        case .automatic: return "Automatic"
+        case .music: return "Apple Music"
+        case .spotify: return "Spotify"
+        case .youtubeChrome: return "YouTube · Chrome"
+        case .youtubeSafari: return "YouTube · Safari"
+        }
+    }
+    var bundleID: String? {
+        switch self {
+        case .automatic: return nil
+        case .music: return "com.apple.Music"
+        case .spotify: return "com.spotify.client"
+        case .youtubeChrome: return "com.google.Chrome"
+        case .youtubeSafari: return "com.apple.Safari"
+        }
+    }
+    var isBrowser: Bool { self == .youtubeChrome || self == .youtubeSafari }
+    static let detectable: [PlayerApp] = [.music, .spotify, .youtubeChrome, .youtubeSafari]
 }
 
 @MainActor
@@ -43,7 +61,7 @@ final class Preferences: ObservableObject {
             } catch { shortcut = .standard }
         }
         mediaEnabled = defaults.bool(forKey: "mediaEnabled")
-        player = PlayerApp(rawValue: defaults.string(forKey: "player") ?? "") ?? .music
+        player = PlayerApp(rawValue: defaults.string(forKey: "player") ?? "") ?? .automatic
         playCompletionSound = defaults.bool(forKey: "playCompletionSound")
         showOnCompletion = defaults.bool(forKey: "showOnCompletion")
         focusMinutes = min(180, max(1, defaults.integer(forKey: "focusMinutes")))

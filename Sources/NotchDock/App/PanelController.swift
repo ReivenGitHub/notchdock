@@ -1,4 +1,5 @@
 import AppKit
+import QuartzCore
 import Combine
 import NotchDockCore
 import SwiftUI
@@ -24,6 +25,7 @@ final class PanelController {
     private var openWork: DispatchWorkItem?
     private var closeWork: DispatchWorkItem?
     private var pointerInside = false
+    private var layoutGeneration = 0
     private var interactionCount = 0
     private var screenObserver: NSObjectProtocol?
     private var wakeObserver: NSObjectProtocol?
@@ -200,20 +202,53 @@ final class PanelController {
             notchWidth = max(0, right.minX - left.maxX)
         } else { notchWidth = 0 }
         let geometry = OverlayGeometry(screen: screen.frame, safeTop: screen.safeAreaInsets.top, hardwareWidth: notchWidth)
+        layoutGeneration += 1
+        let generation = layoutGeneration
+        let useMotion = animated && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        let blendWhenFinished = geometry.hasHardwareNotch && !expanded
+        state.expandedContentWidth = geometry.expandedSize.width
+        if expanded {
+            state.presentingExpandedContent = true
+            state.blendsIntoNotch = false
+        }
+        if !expanded {
+            withAnimation(useMotion ? .easeOut(duration: 0.12) : nil) {
+                state.contentVisible = false
+            }
+        }
         state.topPadding = geometry.topPadding
         let active = focus.hasActiveSession || (preferences.mediaEnabled && media.track.playing)
         let mode = OverlayGeometry.mode(expanded: expanded, hasHardwareNotch: geometry.hasHardwareNotch,
                                         hideWhenIdle: preferences.hideWhenIdle, hasActivity: active)
         state.layoutMode = mode
         state.hardwareNotchWidth = geometry.hasHardwareNotch ? notchWidth : 0
-        state.blendsIntoNotch = geometry.hasHardwareNotch && mode == .idle
         let frame = geometry.frame(mode: mode)
-        if animated && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+        if useMotion {
             NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.24
+                context.duration = expanded ? 0.42 : 0.28
+                context.timingFunction = CAMediaTimingFunction(controlPoints: 0.22, 1, 0.36, 1)
                 panel.animator().setFrame(frame, display: true)
+            } completionHandler: { [weak self] in
+                Task { @MainActor in
+                    guard let self, self.layoutGeneration == generation else { return }
+                    if !expanded { self.state.presentingExpandedContent = false }
+                    self.state.blendsIntoNotch = blendWhenFinished
+                }
             }
-        } else { panel.setFrame(frame, display: true) }
+        } else {
+            panel.setFrame(frame, display: true)
+            state.presentingExpandedContent = expanded
+            state.blendsIntoNotch = blendWhenFinished
+        }
+        if expanded {
+            // Let the shell begin opening before revealing controls at their final width.
+            DispatchQueue.main.asyncAfter(deadline: .now() + (useMotion ? 0.06 : 0)) { [weak self] in
+                guard let self, self.layoutGeneration == generation else { return }
+                withAnimation(useMotion ? .easeOut(duration: 0.24) : nil) {
+                    self.state.contentVisible = true
+                }
+            }
+        }
         panel.orderFrontRegardless()
     }
     func stop() {

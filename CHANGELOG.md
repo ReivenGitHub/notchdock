@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.0 — Softer panel motion
+
+- Added a gentle 420 ms opening curve and a quicker 280 ms closing curve, anchored at the notch.
+- Reveal controls with a short fade after the shell begins opening; keep their layout at full width so labels and cards do not squeeze during resizing.
+- Fade controls out while the black shell retracts, then remove it completely. No permanent side indicators.
+- Ignore stale animation completions when the direction changes, and respect Reduce Motion with immediate resizing.
+
 ## 0.5.1 — Pointer-driven opening and closing
 
 - Start closed and unpinned instead of pinning the interface on first launch.

@@ -18,6 +18,9 @@ enum PanelTab: String, CaseIterable, Identifiable, Hashable {
 @MainActor
 final class PanelState: ObservableObject {
     @Published var expanded = false
+    @Published var presentingExpandedContent = false
+    @Published var contentVisible = false
+    @Published var expandedContentWidth: CGFloat = 580
     @Published var pinned = false
     @Published var tab: PanelTab = .overview
     @Published var topPadding: CGFloat = 16

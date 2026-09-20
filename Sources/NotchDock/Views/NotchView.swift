@@ -37,7 +37,15 @@ struct NotchView: View {
                     .accessibilityLabel("Open NotchDock").accessibilityAddTraits(.isButton)
                     .accessibilityAction { state.togglePanel() }
             } else {
-                Group { if state.expanded { expanded } else { compact } }
+                Group {
+                    if state.presentingExpandedContent {
+                        expanded
+                            .frame(width: state.expandedContentWidth)
+                            .opacity(state.contentVisible ? 1 : 0)
+                            .allowsHitTesting(state.expanded && state.contentVisible)
+                            .accessibilityHidden(!state.expanded)
+                    } else { compact }
+                }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                     .background(DockShape().fill(Color.black))
                     .overlay(DockShape().stroke(DockTheme.border, lineWidth: 0.75))

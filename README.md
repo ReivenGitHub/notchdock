@@ -6,7 +6,7 @@ A native macOS notch companion with automatic media detection, files and AirDrop
 
 ![NotchDock interface design preview](docs/preview.svg)
 
-> **Early version · 0.5.0.** See [recorded validation results](docs/VALIDATION.md) and the [macOS build workflow](https://github.com/ReivenGitHub/notchdock/actions/workflows/macos.yml) for actual build status. Native interaction and hardware testing remain separate from compilation. The image above illustrates the original design, not a current app screenshot.
+> **Early version · 0.6.0.** See [recorded validation results](docs/VALIDATION.md) and the [macOS build workflow](https://github.com/ReivenGitHub/notchdock/actions/workflows/macos.yml) for actual build status. Native interaction and hardware testing remain separate from compilation. The image above illustrates the original design, not a current app screenshot.
 
 ## What it does
 
@@ -14,6 +14,7 @@ A native macOS notch companion with automatic media detection, files and AirDrop
 | --- | --- |
 | Quiet closed notch | Nothing is drawn beside the real camera notch while the panel is closed, even when media or a timer is active. Hover or click below it to open. |
 | Automatic closing | The unpinned panel closes shortly after the pointer leaves the full interface. Pin it when you want it to remain open. |
+| Refined motion | Soft opening, quicker retraction, and fading controls that keep their layout during resizing. Respects macOS Reduce Motion. |
 | Automatic media | Detects active playback from Apple Music, Spotify, or YouTube in Chrome/Safari. Shows source, title, artist/channel, album/site, progress, controls, and cover art. |
 | Files Tray | Up to 24 files/folders, a dedicated drop target, drag in/out, search, sorting, Quick Look, copy file/path, and Finder actions. |
 | AirDrop | A separate drop target opens Apple's recipient picker. Also available from each file's menu or the menu bar. |
@@ -47,7 +48,7 @@ Drag `build/NotchDock.app` into **Applications** to keep it. Enable launch at lo
 
 ### Download a GitHub build
 
-**[Download NotchDock 0.5 for Apple silicon and Intel](https://github.com/ReivenGitHub/notchdock/actions/runs/35482583403/artifacts/10596049661)** — native compilation, all 56 tests, and universal-binary verification passed. The artifact expires October 4, 2026; see [verification details](docs/VALIDATION.md). Quit the old app before replacing it in Applications; existing shelf references, preferences, and timer state are preserved.
+**[Download NotchDock 0.6 for Apple silicon and Intel](https://github.com/ReivenGitHub/notchdock/actions/runs/35483411805/artifacts/10597216022)** — native compilation, all 56 tests, and universal-binary verification passed. The artifact expires October 4, 2026; see [verification details](docs/VALIDATION.md). Quit the old app before replacing it in Applications; existing shelf references, preferences, and timer state are preserved.
 
 Open [Actions](https://github.com/ReivenGitHub/notchdock/actions/workflows/macos.yml), choose a successful **Build NotchDock for macOS** run, and download its **NotchDock-macOS** artifact. Unzip the download and the included `NotchDock-macOS.zip` to get the `.app`. The workflow builds both architectures and includes a SHA-256 checksum. It does not automatically publish a Release.
 

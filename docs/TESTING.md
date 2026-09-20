@@ -29,6 +29,7 @@ Use the bundled `.app`, not a bare command-line executable.
 - [ ] Start/pause/reset a focus timer and play/pause/quit the selected player. State stays available after reopening, but the closed hardware notch remains visually unchanged. Background media changes may take six seconds.
 - [ ] Turn quiet idle off/on and confirm both the visible handle and quiet notch remain reachable.
 - [ ] Hover opens; moving outside the complete panel closes Overview, Files, Focus, and Mirror after the short delay. Pin prevents automatic closing, and closing restores desktop clicks.
+- [ ] Opening eases smoothly into place without squeezing text; closing fades controls and retracts the shell before leaving no visible side content. Rapidly leave and re-enter during both transitions: no stale fade, flashing compact icons, or stuck panel. Repeat with Reduce Motion enabled and on a secondary display.
 - [ ] ⌥⌘Space, menu bar fallback, and Escape with panel focus work.
 - [ ] Record a custom shortcut, reject plain typing keys, cancel with Escape, close Settings during capture, test a shortcut conflict, reset, disable, and relaunch.
 - [ ] Settings opens normally; closing it leaves the app running.

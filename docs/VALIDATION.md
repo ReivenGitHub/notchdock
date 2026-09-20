@@ -1,5 +1,11 @@
 # Validation record
 
+## Version 0.6 — verified macOS build, 2026-09-20
+
+[Build run](https://github.com/ReivenGitHub/notchdock/actions/runs/35483411805) verified source commit `e50c84e33e973dcb351f2ca65e7085b6fcdbc60b`: native compilation, all 56 XCTest cases, both release architectures, universal executable verification, and packaging passed. The job log contained no Swift compiler warnings or errors. Animation appearance, rapid direction changes, and Reduce Motion behavior require the [hands-on checklist](TESTING.md); compilation is not a visual smoothness test.
+
+[Download NotchDock 0.6](https://github.com/ReivenGitHub/notchdock/actions/runs/35483411805/artifacts/10597216022). Expires 2026-10-04. The app remains ad-hoc signed, not notarized.
+
 ## Version 0.5 — verified macOS build, 2026-09-20
 
 [Final v0.5 build](https://github.com/ReivenGitHub/notchdock/actions/runs/35482583403) succeeded for source commit `a81eac5afccce6176c5b333a5de5a326bf94aac4` on macOS 15 with Apple Swift 6.1.2. Static validation passed, all 56 XCTest cases executed and passed, both Apple-silicon and Intel release builds completed, and `lipo` verified the universal executable. The Swift build produced no compiler warnings or errors. Signature structure, property-list validation, archive creation, checksum creation, and artifact upload also passed.

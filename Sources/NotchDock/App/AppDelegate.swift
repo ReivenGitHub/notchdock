@@ -44,8 +44,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         installMenu()
         if !UserDefaults.standard.bool(forKey: "hasLaunched") {
             UserDefaults.standard.set(true, forKey: "hasLaunched")
-            state.pinned = true
-            panelController?.expand()
+            // Start closed and unpinned: approaching the notch reveals the UI.
         }
     }
     private func installMenu() {

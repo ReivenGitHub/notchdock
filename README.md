@@ -41,7 +41,7 @@ bash scripts/build-app.sh
 open build/NotchDock.app
 ```
 
-You can also run `Build-NotchDock.command` from the project folder. The app lives in the menu bar and at the top of your display, so there is no Dock icon. On first launch, the panel stays pinned so you can explore it.
+You can also run `Build-NotchDock.command` from the project folder. The app lives in the menu bar and at the top of your display, so there is no Dock icon. It starts closed and unpinned: touch the notch's lower edge with the pointer to open it, then move outside the opened interface to close it. No click is needed with Expand on hover enabled (the default).
 
 Drag `build/NotchDock.app` into **Applications** to keep it. Enable launch at login after moving it there.
 

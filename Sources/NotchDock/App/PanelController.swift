@@ -143,10 +143,17 @@ final class PanelController {
         DispatchQueue.main.asyncAfter(deadline: .now() + 8, execute: work)
     }
     private func pointerChanged(_ inside: Bool) {
+        // SwiftUI can report exit when its compact view is replaced during expansion.
+        // Use the whole panel, not an individual view, as the hover boundary.
+        let inside = panel.frame.contains(NSEvent.mouseLocation)
+        guard inside != pointerInside else { return }
         pointerInside = inside
         cancelPending()
         if inside, preferences.expandOnHover, !state.expanded {
-            let work = DispatchWorkItem { [weak self] in self?.expand() }
+            let work = DispatchWorkItem { [weak self] in
+                guard let self, self.panel.frame.contains(NSEvent.mouseLocation) else { return }
+                self.expand()
+            }
             openWork = work
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.18, execute: work)
         } else if !inside { scheduleClose() }
@@ -170,17 +177,16 @@ final class PanelController {
     private func scheduleClose() {
         closeWork?.cancel()
         guard state.expanded, !state.pinned, !state.dropTargeted, !pointerInside,
-              interactionCount == 0, !isEditingText else { return }
+              interactionCount == 0 else { return }
         let work = DispatchWorkItem { [weak self] in
             guard let self, !self.state.pinned, !self.state.dropTargeted,
-                  !self.pointerInside, self.interactionCount == 0, !self.isEditingText else { return }
-            self.state.expanded = false
+                  !self.panel.frame.contains(NSEvent.mouseLocation), self.interactionCount == 0 else { return }
+            self.collapse()
         }
         closeWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6, execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: work)
     }
     private func cancelPending() { openWork?.cancel(); closeWork?.cancel() }
-    private var isEditingText: Bool { panel.isKeyWindow && panel.firstResponder is NSTextView }
     private func scheduleActivityLayout() {
         DispatchQueue.main.async { [weak self] in
             guard let self, !self.state.expanded else { return }

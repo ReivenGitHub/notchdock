@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.1 — Pointer-driven opening and closing
+
+- Start closed and unpinned instead of pinning the interface on first launch.
+- Hover at the notch to open without clicking; leave the full panel to close after 0.3 seconds, even if its search field retains focus.
+- Recheck the live pointer position before opening or closing, and ignore duplicate hover callbacks during view replacement.
+- Explicit pinning and native file/sharing interactions remain intentional exceptions to auto-close.
+
 ## 0.5.0 — Quiet notch and reliable auto-close
 
 - Removed all compact activity wings from notched MacBook displays. Closing the interface leaves no album art, timer, waveform, border, or icon beside the physical camera notch.

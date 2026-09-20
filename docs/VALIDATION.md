@@ -1,8 +1,20 @@
 # Validation record
 
-## Version 0.4 verification
+## Version 0.4 — verified macOS build, 2026-09-20
 
-Local packaging, permission metadata, shell syntax, documentation links, and diff checks passed. Native compilation, all 55 XCTest cases, universal packaging, and browser-script compilation are pending the macOS workflow. Live YouTube detection and controls require a browser with JavaScript from Apple Events enabled and remain on the [manual checklist](TESTING.md).
+[Final v0.4 build](https://github.com/ReivenGitHub/notchdock/actions/runs/35481340477) succeeded for source commit `c393faa9e822ff8345f65b469a84a43910650a1b` on macOS 15 with Apple Swift 6.1.2.
+
+| Check | Observed result |
+| --- | --- |
+| Static packaging, shell syntax, permission metadata, and documentation links | Passed. |
+| Native Swift compilation | Passed with no Swift compiler warnings or errors. |
+| XCTest regression cases | All 55 executed and passed, including browser-media policy and script compilation coverage. |
+| Apple silicon and Intel release builds | Both passed. |
+| Universal executable | Passed architecture verification for `arm64` and `x86_64`. |
+| Signature structure, property list, archive, and checksum | Passed. Signature remains ad-hoc, not notarized. |
+| Live YouTube, desktop players, AirDrop, camera, and physical-notch interaction | Not interactively tested; use the [manual checklist](TESTING.md). |
+
+[Download NotchDock 0.4 for Apple silicon and Intel](https://github.com/ReivenGitHub/notchdock/actions/runs/35481340477/artifacts/10595553634) (expires 2026-10-04). The artifact contains `NotchDock-macOS.zip` and `SHA256SUMS.txt`.
 
 ## Version 0.3 — verified macOS build, 2026-09-17
 
